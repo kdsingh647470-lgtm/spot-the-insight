@@ -1,29 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-function publicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
-}
-
-async function signImages(sb: ReturnType<typeof publicClient>, urls: string[]) {
-  const paths = urls.map((u) => u.replace(/^storage:\/\//, ""));
-  const { data } = await sb.storage.from("level-images").createSignedUrls(paths, 3600);
-  const map = new Map(data?.map((d) => [d.path, d.signedUrl]) ?? []);
-  return urls.map((u) => {
-    if (!u.startsWith("storage://")) return u;
-    return map.get(u.replace(/^storage:\/\//, "")) ?? u;
-  });
-}
+import { createPublicBackendClient, signLevelImages } from "./levels.server";
 
 export const listLevels = createServerFn({ method: "GET" }).handler(async () => {
-  const sb = publicClient();
+  const sb = createPublicBackendClient();
   const { data, error } = await sb.from("levels").select("id, world, level_number, title, difficulty, image_a_url")
     .eq("published", true).order("world").order("level_number");
   if (error) throw new Error(error.message);
@@ -33,17 +14,17 @@ export const listLevels = createServerFn({ method: "GET" }).handler(async () => 
 export const getLevelById = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
-    const sb = publicClient();
+    const sb = createPublicBackendClient();
     const { data: lvl, error } = await sb.from("levels").select("*").eq("id", data.id).eq("published", true).maybeSingle();
     if (error) throw new Error(error.message);
     if (!lvl) throw new Error("Level not found");
     const { data: diffs } = await sb.from("differences").select("id, x, y, radius, label").eq("level_id", lvl.id);
-    const [signedA, signedB] = await signImages(sb, [lvl.image_a_url, lvl.image_b_url]);
+    const [signedA, signedB] = await signLevelImages(sb, [lvl.image_a_url, lvl.image_b_url]);
     return { ...lvl, image_a_url: signedA, image_b_url: signedB, differences: diffs ?? [] };
   });
 
 export const getRandomLevel = createServerFn({ method: "GET" }).handler(async () => {
-  const sb = publicClient();
+  const sb = createPublicBackendClient();
   const { data, error } = await sb.from("levels").select("id").eq("published", true).limit(200);
   if (error) throw new Error(error.message);
   if (!data?.length) return null;
@@ -52,7 +33,7 @@ export const getRandomLevel = createServerFn({ method: "GET" }).handler(async ()
 });
 
 export const getDailyLevel = createServerFn({ method: "GET" }).handler(async () => {
-  const sb = publicClient();
+  const sb = createPublicBackendClient();
   const today = new Date().toISOString().slice(0, 10);
   const { data } = await sb.from("levels").select("id").eq("is_daily", true).eq("daily_date", today).eq("published", true).maybeSingle();
   if (data) return data.id;
@@ -105,7 +86,7 @@ export const spendHint = createServerFn({ method: "POST" })
   });
 
 export const getLeaderboard = createServerFn({ method: "GET" }).handler(async () => {
-  const sb = publicClient();
+  const sb = createPublicBackendClient();
   const { data, error } = await sb.from("profiles").select("id, username, avatar_url, xp, level, coins").order("xp", { ascending: false }).limit(50);
   if (error) throw new Error(error.message);
   return data ?? [];
