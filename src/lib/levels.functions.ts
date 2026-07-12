@@ -87,7 +87,7 @@ export const spendHint = createServerFn({ method: "POST" })
 
 export const getLeaderboard = createServerFn({ method: "GET" }).handler(async () => {
   const sb = createPublicBackendClient();
-  const { data, error } = await sb.from("profiles").select("id, username, avatar_url, xp, level, coins").order("xp", { ascending: false }).limit(50);
+  const { data, error } = await sb.rpc("get_leaderboard");
   if (error) throw new Error(error.message);
   return data ?? [];
 });
