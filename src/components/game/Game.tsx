@@ -79,6 +79,18 @@ export function Game({ mode, levelId: initialLevelId }: { mode: Mode; levelId?: 
     setRunOver(null);
   }
 
+  // Daily: block replay if already completed today for this signed-in user.
+  const dailyStatusQ = useQuery({
+    queryKey: ["daily-status"],
+    queryFn: () => getDailyStatus(),
+    enabled: mode === "daily",
+    retry: false,
+  });
+  if (mode === "daily" && dailyStatusQ.data?.completion) {
+    const c = dailyStatusQ.data.completion;
+    return <DailyDone timeMs={c.time_ms} stars={c.stars} date={dailyStatusQ.data.date} onHome={() => navigate({ to: "/" })} />;
+  }
+
   if (runOver) {
     return <RunOver reason={runOver} score={runScore} levels={runLevels} onRetry={() => { resetRun(); pickNext(); }} onHome={() => navigate({ to: "/" })} />;
   }
