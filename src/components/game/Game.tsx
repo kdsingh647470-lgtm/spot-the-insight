@@ -167,6 +167,7 @@ function GameInner({ mode, data, onNext }: {
 
   function reset() {
     setFound([]); setLives(3); setHints(0); setMistakes(0); setElapsed(0); setScore(0);
+    setCombo(0); setBestCombo(0); setComboPop(null);
     setShowResult(null); startRef.current = Date.now();
   }
 
