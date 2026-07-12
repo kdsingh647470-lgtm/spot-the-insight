@@ -54,6 +54,23 @@ export const getDailyLevel = createServerFn({ method: "GET" }).handler(async () 
   return pool[idx].id;
 });
 
+export const getDailyStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const startIso = new Date(today + "T00:00:00.000Z").toISOString();
+    const { data } = await context.supabase
+      .from("level_completions")
+      .select("time_ms, stars, level_id, completed_at")
+      .eq("user_id", context.userId)
+      .eq("mode", "daily")
+      .gte("completed_at", startIso)
+      .order("completed_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    return { date: today, completion: data ?? null };
+  });
+
 
 export const submitCompletion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
