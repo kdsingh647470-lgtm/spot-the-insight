@@ -111,7 +111,14 @@ function GameInner({ mode, data, onNext }: {
       playBeep(880, 0.12, "triangle");
       const nf = [...found, { id: hit.id, x: hit.x, y: hit.y }];
       setFound(nf);
-      setScore((s) => s + 100);
+      const newCombo = combo + 1;
+      const multiplier = Math.min(newCombo, 5);
+      const gain = 100 * multiplier;
+      setCombo(newCombo);
+      setBestCombo((b) => Math.max(b, newCombo));
+      setScore((s) => s + gain);
+      setComboPop({ n: newCombo, gain, k: Date.now() });
+      if (newCombo >= 2) playBeep(1100 + newCombo * 60, 0.08, "triangle");
       if (nf.length >= totalDiffs) {
         setShowResult("win");
         void (async () => {
@@ -128,6 +135,8 @@ function GameInner({ mode, data, onNext }: {
       setWrong({ x: px, y: py, k: Date.now() });
       setShakeKey((k) => k + 1);
       setMistakes((m) => m + 1);
+      setCombo(0);
+      setComboPop(null);
       if (!infiniteHints) {
         setLives((l) => {
           const nl = l - 1;
