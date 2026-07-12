@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
-import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles } from "lucide-react";
+import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles, Infinity as InfinityIcon, Leaf, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,10 +14,41 @@ type Found = { id: string; x: number; y: number };
 
 const TAP_TOLERANCE = 0.06;
 
+type ModeConfig = {
+  label: string;
+  icon: typeof Timer;
+  startingLives: number | null;   // null = unlimited
+  livesPersist: boolean;          // carry lives across levels
+  timer: "up" | "down" | "off";
+  startingTime: number;           // seconds; used for "down"
+  timePersist: boolean;           // countdown persists across levels
+  timeBonusOnWin: number;         // seconds added on level clear (timed)
+  freeHints: boolean;
+  autoAdvance: boolean;           // relax: auto next after short pause
+  allowNext: boolean;             // daily: no next-level button
+  scorePersist: boolean;          // carry score across levels
+};
+
+const MODE_CONFIG: Record<Mode, ModeConfig> = {
+  story:    { label: "Story",    icon: Sparkles,     startingLives: 3,    livesPersist: false, timer: "up",   startingTime: 0,  timePersist: false, timeBonusOnWin: 0,  freeHints: false, autoAdvance: false, allowNext: true,  scorePersist: false },
+  daily:    { label: "Daily",    icon: Calendar,     startingLives: 3,    livesPersist: false, timer: "up",   startingTime: 0,  timePersist: false, timeBonusOnWin: 0,  freeHints: false, autoAdvance: false, allowNext: false, scorePersist: false },
+  infinite: { label: "Infinite", icon: InfinityIcon, startingLives: 3,    livesPersist: true,  timer: "up",   startingTime: 0,  timePersist: false, timeBonusOnWin: 0,  freeHints: false, autoAdvance: true,  allowNext: true,  scorePersist: true  },
+  timed:    { label: "Timed",    icon: Timer,        startingLives: null, livesPersist: false, timer: "down", startingTime: 90, timePersist: true,  timeBonusOnWin: 15, freeHints: false, autoAdvance: true,  allowNext: true,  scorePersist: true  },
+  relax:    { label: "Relax",    icon: Leaf,         startingLives: null, livesPersist: false, timer: "off",  startingTime: 0,  timePersist: false, timeBonusOnWin: 0,  freeHints: true,  autoAdvance: true,  allowNext: true,  scorePersist: false },
+};
+
 export function Game({ mode, levelId: initialLevelId }: { mode: Mode; levelId?: string }) {
   const navigate = useNavigate();
+  const cfg = MODE_CONFIG[mode];
   const [levelId, setLevelId] = useState<string | null>(initialLevelId ?? null);
   const [loadingPick, setLoadingPick] = useState(!initialLevelId);
+
+  // Persistent run state across levels (for infinite / timed)
+  const [runLives, setRunLives] = useState<number | null>(cfg.startingLives);
+  const [runTime, setRunTime] = useState<number>(cfg.startingTime);   // seconds remaining for down; ignored for up
+  const [runScore, setRunScore] = useState(0);
+  const [runLevels, setRunLevels] = useState(0);
+  const [runOver, setRunOver] = useState<null | "lives" | "time">(null);
 
   useEffect(() => {
     if (initialLevelId) return;
@@ -35,6 +66,22 @@ export function Game({ mode, levelId: initialLevelId }: { mode: Mode; levelId?: 
     enabled: !!levelId,
   });
 
+  async function pickNext() {
+    const id = mode === "daily" ? await getDailyLevel() : await getRandomLevel();
+    if (id) setLevelId(id);
+  }
+
+  function resetRun() {
+    setRunLives(cfg.startingLives);
+    setRunTime(cfg.startingTime);
+    setRunScore(0);
+    setRunLevels(0);
+    setRunOver(null);
+  }
+
+  if (runOver) {
+    return <RunOver reason={runOver} score={runScore} levels={runLevels} onRetry={() => { resetRun(); pickNext(); }} onHome={() => navigate({ to: "/" })} />;
+  }
   if (loadingPick || !levelId || lvlQ.isLoading) {
     return <div className="grid min-h-dvh place-items-center">Loading…</div>;
   }
@@ -46,49 +93,80 @@ export function Game({ mode, levelId: initialLevelId }: { mode: Mode; levelId?: 
       </div>
     </div>;
   }
-  return <GameInner mode={mode} data={lvlQ.data} onNext={async () => {
-    const id = mode === "daily" ? await getDailyLevel() : await getRandomLevel();
-    if (id) setLevelId(id);
-    lvlQ.refetch();
-  }} />;
+  return (
+    <GameInner
+      key={levelId}
+      mode={mode}
+      cfg={cfg}
+      data={lvlQ.data}
+      run={{ lives: runLives, timeRemaining: runTime, score: runScore, levels: runLevels }}
+      onLevelClear={({ scoreDelta, remainingTime }) => {
+        if (cfg.scorePersist) setRunScore((s) => s + scoreDelta);
+        if (cfg.livesPersist) { /* keep runLives as-is (updated on mistakes) */ }
+        if (cfg.timePersist) setRunTime(Math.max(0, remainingTime + cfg.timeBonusOnWin));
+        setRunLevels((n) => n + 1);
+      }}
+      onLivesChange={(l) => { if (cfg.livesPersist) setRunLives(l); }}
+      onOutOfLives={() => setRunOver("lives")}
+      onOutOfTime={() => setRunOver("time")}
+      onNext={pickNext}
+    />
+  );
 }
 
-function GameInner({ mode, data, onNext }: {
+function GameInner({
+  mode, cfg, data, run, onLevelClear, onLivesChange, onOutOfLives, onOutOfTime, onNext,
+}: {
   mode: Mode;
+  cfg: ModeConfig;
   data: { id: string; title: string; image_a_url: string; image_b_url: string; differences: Diff[] };
+  run: { lives: number | null; timeRemaining: number; score: number; levels: number };
+  onLevelClear: (r: { scoreDelta: number; remainingTime: number }) => void;
+  onLivesChange: (lives: number) => void;
+  onOutOfLives: () => void;
+  onOutOfTime: () => void;
   onNext: () => void;
 }) {
   const navigate = useNavigate();
   const totalDiffs = data.differences.length || 5;
   const [found, setFound] = useState<Found[]>([]);
-  const [lives, setLives] = useState(3);
+  const [lives, setLives] = useState<number | null>(run.lives);
   const [hints, setHints] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed] = useState(0);              // seconds since level start
+  const [timeLeft, setTimeLeft] = useState(run.timeRemaining); // seconds remaining (timed)
   const [wrong, setWrong] = useState<{ x: number; y: number; k: number } | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
   const [hintTarget, setHintTarget] = useState<Diff | null>(null);
   const [showResult, setShowResult] = useState<null | "win" | "lose">(null);
-  const [score, setScore] = useState(0);
+  const [levelScore, setLevelScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [bestCombo, setBestCombo] = useState(0);
   const [comboPop, setComboPop] = useState<{ n: number; gain: number; k: number } | null>(null);
   const [session, setSession] = useState<any>(null);
   const startRef = useRef(Date.now());
-  const timeLimit = mode === "timed" ? 90 : mode === "relax" ? undefined : undefined;
-  const infiniteHints = mode === "relax";
 
   useEffect(() => { supabase.auth.getSession().then(({ data }) => setSession(data.session)); }, []);
-  useEffect(() => {
-    if (paused || showResult) return;
-    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 250);
-    return () => clearInterval(t);
-  }, [paused, showResult]);
 
+  // Timer tick
   useEffect(() => {
-    if (timeLimit && elapsed >= timeLimit && !showResult) setShowResult("lose");
-  }, [elapsed, timeLimit, showResult]);
+    if (paused || showResult || cfg.timer === "off") return;
+    const t = setInterval(() => {
+      const secs = Math.floor((Date.now() - startRef.current) / 1000);
+      setElapsed(secs);
+      if (cfg.timer === "down") {
+        const remaining = Math.max(0, run.timeRemaining - secs);
+        setTimeLeft(remaining);
+        if (remaining <= 0) {
+          clearInterval(t);
+          setShowResult("lose");
+          onOutOfTime();
+        }
+      }
+    }, 250);
+    return () => clearInterval(t);
+  }, [paused, showResult, cfg.timer, run.timeRemaining, onOutOfTime]);
 
   const submitMut = useMutation({ mutationFn: submitCompletion });
 
@@ -116,19 +194,25 @@ function GameInner({ mode, data, onNext }: {
       const gain = 100 * multiplier;
       setCombo(newCombo);
       setBestCombo((b) => Math.max(b, newCombo));
-      setScore((s) => s + gain);
+      setLevelScore((s) => s + gain);
       setComboPop({ n: newCombo, gain, k: Date.now() });
       if (newCombo >= 2) playBeep(1100 + newCombo * 60, 0.08, "triangle");
       if (nf.length >= totalDiffs) {
+        const timeUsed = Math.floor((Date.now() - startRef.current) / 1000);
+        const remainingTime = cfg.timer === "down" ? Math.max(0, run.timeRemaining - timeUsed) : 0;
         setShowResult("win");
+        onLevelClear({ scoreDelta: levelScore + gain, remainingTime });
         void (async () => {
           if (session) {
             try {
               const r = await submitMut.mutateAsync({ data: { level_id: data.id, time_ms: (Date.now() - startRef.current), hints_used: hints, mistakes, mode: mode === "story" ? "story" : mode } });
-              setScore((s) => s + r.coinsEarned);
+              setLevelScore((s) => s + r.coinsEarned);
             } catch {}
           }
         })();
+        if (cfg.autoAdvance) {
+          setTimeout(() => { onNext(); }, 1400);
+        }
       }
     } else {
       playBeep(180, 0.15, "square");
@@ -137,12 +221,14 @@ function GameInner({ mode, data, onNext }: {
       setMistakes((m) => m + 1);
       setCombo(0);
       setComboPop(null);
-      if (!infiniteHints) {
-        setLives((l) => {
-          const nl = l - 1;
-          if (nl <= 0) setShowResult("lose");
-          return nl;
-        });
+      if (lives != null) {
+        const nl = lives - 1;
+        setLives(nl);
+        onLivesChange(nl);
+        if (nl <= 0) {
+          setShowResult("lose");
+          onOutOfLives();
+        }
       }
     }
   }
@@ -150,7 +236,7 @@ function GameInner({ mode, data, onNext }: {
   async function useHint() {
     const remaining = data.differences.filter((d) => !found.some((f) => f.id === d.id));
     if (!remaining.length) return;
-    if (!infiniteHints && session) {
+    if (!cfg.freeHints && session) {
       try {
         await spendHint();
         toast.success("Used a hint (−25 coins)");
@@ -166,27 +252,41 @@ function GameInner({ mode, data, onNext }: {
   }
 
   function reset() {
-    setFound([]); setLives(3); setHints(0); setMistakes(0); setElapsed(0); setScore(0);
+    setFound([]); setLives(cfg.startingLives); setHints(0); setMistakes(0); setElapsed(0);
+    setTimeLeft(cfg.startingTime); setLevelScore(0);
     setCombo(0); setBestCombo(0); setComboPop(null);
     setShowResult(null); startRef.current = Date.now();
   }
 
-  const remainingCount = totalDiffs - found.length;
   const stars = mistakes === 0 && hints === 0 ? 3 : mistakes <= 1 ? 2 : 1;
+  const totalScore = (cfg.scorePersist ? run.score : 0) + levelScore;
+  const ModeIcon = cfg.icon;
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       {/* HUD */}
       <div className="flex items-center justify-between gap-2 border-b border-border bg-background/80 px-3 py-2 backdrop-blur">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/" })} aria-label="Home"><Home className="h-5 w-5" /></Button>
-        <div className="flex items-center gap-1">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Heart key={i} className={`h-5 w-5 ${i < lives ? "fill-destructive text-destructive" : "text-muted-foreground/40"}`} />
-          ))}
+        <div className="flex min-w-0 items-center gap-1">
+          {lives == null ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs font-bold text-muted-foreground">
+              <ModeIcon className="h-3.5 w-3.5" /> {cfg.label}
+            </span>
+          ) : (
+            Array.from({ length: cfg.startingLives ?? 0 }).map((_, i) => (
+              <Heart key={i} className={`h-5 w-5 ${i < lives ? "fill-destructive text-destructive" : "text-muted-foreground/40"}`} />
+            ))
+          )}
         </div>
-        <div className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm font-bold tabular-nums">
-          <Timer className="h-4 w-4" /> {formatTime(timeLimit ? Math.max(0, timeLimit - elapsed) : elapsed)}
-        </div>
+        {cfg.timer !== "off" ? (
+          <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold tabular-nums ${cfg.timer === "down" && timeLeft <= 10 ? "bg-destructive text-destructive-foreground animate-pulse" : "bg-muted"}`}>
+            <Timer className="h-4 w-4" /> {formatTime(cfg.timer === "down" ? timeLeft : elapsed)}
+          </div>
+        ) : (
+          <div className="inline-flex items-center gap-1 rounded-full bg-success/15 px-3 py-1 text-sm font-bold text-success">
+            <Leaf className="h-4 w-4" /> Relax
+          </div>
+        )}
         <div className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
           <Sparkles className="h-4 w-4" /> {found.length}/{totalDiffs}
         </div>
@@ -214,13 +314,16 @@ function GameInner({ mode, data, onNext }: {
 
       <div className="flex items-center justify-between gap-2 border-t border-border bg-background/80 px-3 py-3 backdrop-blur">
         <Button variant="secondary" onClick={useHint}>
-          <Lightbulb className="mr-1 h-4 w-4" /> Hint {infiniteHints ? "" : "(25)"}
+          <Lightbulb className="mr-1 h-4 w-4" /> Hint {cfg.freeHints ? "" : "(25)"}
         </Button>
         <div className="flex items-center gap-2 text-sm font-bold tabular-nums">
           {combo >= 2 && (
             <span className="rounded-full bg-warning/20 px-2 py-0.5 text-warning">×{Math.min(combo, 5)}</span>
           )}
-          <span>Score {score}</span>
+          <span>Score {totalScore}</span>
+          {cfg.scorePersist && run.levels > 0 && (
+            <span className="text-muted-foreground">· Lv {run.levels + 1}</span>
+          )}
         </div>
         <Button variant="ghost" onClick={reset}><RotateCcw className="mr-1 h-4 w-4" /> Restart</Button>
       </div>
@@ -255,10 +358,17 @@ function GameInner({ mode, data, onNext }: {
                 <Stat label="Best combo" value={`×${bestCombo}`} />
               </div>
               <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-warning/15 px-3 py-1 font-bold text-warning">
-                <Coins className="h-4 w-4" /> +{score}
+                <Coins className="h-4 w-4" /> +{levelScore}
               </div>
+              {cfg.timer === "down" && cfg.timeBonusOnWin > 0 && (
+                <p className="mt-2 text-sm font-bold text-success">+{cfg.timeBonusOnWin}s bonus time!</p>
+              )}
               <div className="mt-5 flex gap-2">
-                <Button className="flex-1" onClick={() => { reset(); onNext(); }}>Next level</Button>
+                {cfg.allowNext ? (
+                  <Button className="flex-1" onClick={() => { onNext(); }}>{cfg.autoAdvance ? "Next now" : "Next level"}</Button>
+                ) : (
+                  <Button className="flex-1" onClick={() => navigate({ to: "/" })}>Done</Button>
+                )}
                 <Button variant="secondary" onClick={() => navigate({ to: "/" })}>Home</Button>
               </div>
             </div>
@@ -270,7 +380,7 @@ function GameInner({ mode, data, onNext }: {
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/20 text-destructive">
                 <X className="h-8 w-8" />
               </div>
-              <h2 className="mt-3 text-2xl font-black">Out of {timeLimit ? "time" : "lives"}</h2>
+              <h2 className="mt-3 text-2xl font-black">Out of {cfg.timer === "down" ? "time" : "lives"}</h2>
               <p className="mt-1 text-sm text-muted-foreground">You found {found.length} of {totalDiffs} differences.</p>
               <div className="mt-5 flex gap-2">
                 <Button className="flex-1" onClick={reset}><RotateCcw className="mr-1 h-4 w-4" /> Retry</Button>
@@ -280,6 +390,28 @@ function GameInner({ mode, data, onNext }: {
           </ModalCard>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function RunOver({ reason, score, levels, onRetry, onHome }: { reason: "lives" | "time"; score: number; levels: number; onRetry: () => void; onHome: () => void }) {
+  return (
+    <div className="grid min-h-dvh place-items-center bg-background p-4">
+      <div className="w-full max-w-sm rounded-3xl bg-card p-6 text-center shadow-elevated">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/20 text-destructive">
+          <X className="h-8 w-8" />
+        </div>
+        <h2 className="mt-3 text-2xl font-black">Run over</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Out of {reason}.</p>
+        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+          <Stat label="Levels cleared" value={String(levels)} />
+          <Stat label="Total score" value={String(score)} />
+        </div>
+        <div className="mt-5 flex gap-2">
+          <Button className="flex-1" onClick={onRetry}><RotateCcw className="mr-1 h-4 w-4" /> New run</Button>
+          <Button variant="secondary" onClick={onHome}>Home</Button>
+        </div>
+      </div>
     </div>
   );
 }
