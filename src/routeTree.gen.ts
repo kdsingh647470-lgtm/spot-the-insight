@@ -9,38 +9,147 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlayModeRouteImport } from './routes/play.$mode'
+import { Route as ApiGenerateLevelImagesRouteImport } from './routes/api/generate-level-images'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as PlayModeLevelIdRouteImport } from './routes/play.$mode.$levelId'
 
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlayModeRoute = PlayModeRouteImport.update({
+  id: '/play/$mode',
+  path: '/play/$mode',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGenerateLevelImagesRoute = ApiGenerateLevelImagesRouteImport.update({
+  id: '/api/generate-level-images',
+  path: '/api/generate-level-images',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const PlayModeLevelIdRoute = PlayModeLevelIdRouteImport.update({
+  id: '/$levelId',
+  path: '/$levelId',
+  getParentRoute: () => PlayModeRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/leaderboard': typeof LeaderboardRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
+  '/play/$mode': typeof PlayModeRouteWithChildren
+  '/play/$mode/$levelId': typeof PlayModeLevelIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/leaderboard': typeof LeaderboardRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
+  '/play/$mode': typeof PlayModeRouteWithChildren
+  '/play/$mode/$levelId': typeof PlayModeLevelIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/leaderboard': typeof LeaderboardRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
+  '/play/$mode': typeof PlayModeRouteWithChildren
+  '/play/$mode/$levelId': typeof PlayModeLevelIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/leaderboard'
+    | '/profile'
+    | '/api/generate-level-images'
+    | '/play/$mode'
+    | '/play/$mode/$levelId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/leaderboard'
+    | '/profile'
+    | '/api/generate-level-images'
+    | '/play/$mode'
+    | '/play/$mode/$levelId'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/leaderboard'
+    | '/_authenticated/profile'
+    | '/api/generate-level-images'
+    | '/play/$mode'
+    | '/play/$mode/$levelId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  LeaderboardRoute: typeof LeaderboardRoute
+  ApiGenerateLevelImagesRoute: typeof ApiGenerateLevelImagesRoute
+  PlayModeRoute: typeof PlayModeRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +157,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/play/$mode': {
+      id: '/play/$mode'
+      path: '/play/$mode'
+      fullPath: '/play/$mode'
+      preLoaderRoute: typeof PlayModeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/generate-level-images': {
+      id: '/api/generate-level-images'
+      path: '/api/generate-level-images'
+      fullPath: '/api/generate-level-images'
+      preLoaderRoute: typeof ApiGenerateLevelImagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/play/$mode/$levelId': {
+      id: '/play/$mode/$levelId'
+      path: '/$levelId'
+      fullPath: '/play/$mode/$levelId'
+      preLoaderRoute: typeof PlayModeLevelIdRouteImport
+      parentRoute: typeof PlayModeRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
+interface PlayModeRouteChildren {
+  PlayModeLevelIdRoute: typeof PlayModeLevelIdRoute
+}
+
+const PlayModeRouteChildren: PlayModeRouteChildren = {
+  PlayModeLevelIdRoute: PlayModeLevelIdRoute,
+}
+
+const PlayModeRouteWithChildren = PlayModeRoute._addFileChildren(
+  PlayModeRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  LeaderboardRoute: LeaderboardRoute,
+  ApiGenerateLevelImagesRoute: ApiGenerateLevelImagesRoute,
+  PlayModeRoute: PlayModeRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
