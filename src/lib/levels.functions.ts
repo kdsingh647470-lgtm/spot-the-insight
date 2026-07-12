@@ -34,12 +34,26 @@ export const getRandomLevel = createServerFn({ method: "GET" }).handler(async ()
 
 export const getDailyLevel = createServerFn({ method: "GET" }).handler(async () => {
   const sb = createPublicBackendClient();
-  const today = new Date().toISOString().slice(0, 10);
-  const { data } = await sb.from("levels").select("id").eq("is_daily", true).eq("daily_date", today).eq("published", true).maybeSingle();
-  if (data) return data.id;
-  const { data: any } = await sb.from("levels").select("id").eq("published", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  return any?.id ?? null;
+  const today = new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
+  // 1) Explicit daily assignment for today wins.
+  const { data: assigned } = await sb.from("levels")
+    .select("id").eq("is_daily", true).eq("daily_date", today).eq("published", true).maybeSingle();
+  if (assigned) return assigned.id;
+  // 2) Deterministic fallback: hash today's date to an index into the
+  //    ordered pool of published levels. Every player gets the same level
+  //    until UTC midnight, when the date string changes and the index rolls.
+  const { data: pool } = await sb.from("levels")
+    .select("id").eq("published", true).order("created_at", { ascending: true }).order("id", { ascending: true });
+  if (!pool?.length) return null;
+  let h = 2166136261; // FNV-1a 32-bit
+  for (let i = 0; i < today.length; i++) {
+    h ^= today.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const idx = (h >>> 0) % pool.length;
+  return pool[idx].id;
 });
+
 
 export const submitCompletion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
