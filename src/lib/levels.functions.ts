@@ -129,6 +129,67 @@ export const spendHint = createServerFn({ method: "POST" })
     return { remaining: prof.coins - cost };
   });
 
+function todayUtc() { return new Date().toISOString().slice(0, 10); }
+function yesterdayUtc() { const d = new Date(); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); }
+function rewardForStreak(streak: number) {
+  const cap = Math.min(streak, 7);
+  return { coins: 100 + cap * 20, xp: 25 + cap * 5 };
+}
+
+export const getDailyReward = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const today = todayUtc();
+    const startIso = new Date(today + "T00:00:00.000Z").toISOString();
+    const [{ data: completion }, { data: reward }] = await Promise.all([
+      context.supabase.from("level_completions").select("id").eq("user_id", context.userId).eq("mode", "daily").gte("completed_at", startIso).limit(1).maybeSingle(),
+      context.supabase.from("daily_rewards").select("last_claim_date, streak").eq("user_id", context.userId).maybeSingle(),
+    ]);
+    const claimedToday = reward?.last_claim_date === today;
+    const currentStreak = reward?.streak ?? 0;
+    // If already claimed today, streak already reflects today; otherwise preview next streak.
+    const nextStreak = claimedToday ? currentStreak : (reward?.last_claim_date === yesterdayUtc() ? currentStreak + 1 : 1);
+    const preview = rewardForStreak(nextStreak);
+    return {
+      date: today,
+      dailyCompleted: !!completion,
+      claimedToday,
+      streak: currentStreak,
+      nextStreak,
+      preview,
+    };
+  });
+
+export const claimDailyReward = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const today = todayUtc();
+    const startIso = new Date(today + "T00:00:00.000Z").toISOString();
+    // Must have finished the daily challenge today.
+    const { data: completion } = await context.supabase
+      .from("level_completions").select("id").eq("user_id", context.userId).eq("mode", "daily").gte("completed_at", startIso).limit(1).maybeSingle();
+    if (!completion) throw new Error("Finish today's daily challenge first");
+    // One claim per UTC day.
+    const { data: existing } = await context.supabase
+      .from("daily_rewards").select("last_claim_date, streak").eq("user_id", context.userId).maybeSingle();
+    if (existing?.last_claim_date === today) throw new Error("Daily reward already claimed today");
+    const nextStreak = existing?.last_claim_date === yesterdayUtc() ? existing.streak + 1 : 1;
+    const { coins, xp } = rewardForStreak(nextStreak);
+    // Upsert reward record (user_id is primary key).
+    const { error: upErr } = await context.supabase
+      .from("daily_rewards")
+      .upsert({ user_id: context.userId, last_claim_date: today, streak: nextStreak }, { onConflict: "user_id" });
+    if (upErr) throw new Error(upErr.message);
+    // Credit profile.
+    const { data: prof } = await context.supabase.from("profiles").select("coins, xp, level").eq("id", context.userId).maybeSingle();
+    const newCoins = (prof?.coins ?? 0) + coins;
+    const newXp = (prof?.xp ?? 0) + xp;
+    const newLevel = Math.max(1, Math.floor(newXp / 200) + 1);
+    await context.supabase.from("profiles").update({ coins: newCoins, xp: newXp, level: newLevel }).eq("id", context.userId);
+    return { coins, xp, streak: nextStreak, totalCoins: newCoins, totalXp: newXp, level: newLevel };
+  });
+
+
 export const getLeaderboard = createServerFn({ method: "GET" }).handler(async () => {
   const sb = createPublicBackendClient();
   const { data, error } = await sb.rpc("get_leaderboard");
