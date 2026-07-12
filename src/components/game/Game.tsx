@@ -71,6 +71,9 @@ function GameInner({ mode, data, onNext }: {
   const [hintTarget, setHintTarget] = useState<Diff | null>(null);
   const [showResult, setShowResult] = useState<null | "win" | "lose">(null);
   const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
+  const [comboPop, setComboPop] = useState<{ n: number; gain: number; k: number } | null>(null);
   const [session, setSession] = useState<any>(null);
   const startRef = useRef(Date.now());
   const timeLimit = mode === "timed" ? 90 : mode === "relax" ? undefined : undefined;
