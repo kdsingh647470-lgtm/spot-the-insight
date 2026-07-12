@@ -248,10 +248,11 @@ function GameInner({ mode, data, onNext }: {
                   <Star key={i} className={`h-8 w-8 ${i < stars ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
                 ))}
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+              <div className="mt-3 grid grid-cols-4 gap-2 text-sm">
                 <Stat label="Time" value={formatTime(Math.floor((Date.now() - startRef.current) / 1000))} />
                 <Stat label="Mistakes" value={String(mistakes)} />
                 <Stat label="Hints" value={String(hints)} />
+                <Stat label="Best combo" value={`×${bestCombo}`} />
               </div>
               <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-warning/15 px-3 py-1 font-bold text-warning">
                 <Coins className="h-4 w-4" /> +{score}
