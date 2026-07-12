@@ -1,12 +1,12 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
-import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles, Infinity as InfinityIcon, Leaf, Calendar } from "lucide-react";
+import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles, Infinity as InfinityIcon, Leaf, Calendar, Gift, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { getLevelById, submitCompletion, spendHint, getRandomLevel, getDailyLevel, getDailyStatus } from "@/lib/levels.functions";
+import { getLevelById, submitCompletion, spendHint, getRandomLevel, getDailyLevel, getDailyStatus, getDailyReward, claimDailyReward } from "@/lib/levels.functions";
 
 type Mode = "story" | "daily" | "infinite" | "timed" | "relax";
 type Diff = { id: string; x: number; y: number; radius: number; label: string | null };
@@ -408,6 +408,18 @@ function GameInner({
 
 function DailyDone({ timeMs, stars, date, onHome }: { timeMs: number; stars: number; date: string; onHome: () => void }) {
   const secs = Math.floor(timeMs / 1000);
+  const qc = useQueryClient();
+  const rewardQ = useQuery({ queryKey: ["daily-reward"], queryFn: () => getDailyReward(), retry: false });
+  const claimMut = useMutation({
+    mutationFn: claimDailyReward,
+    onSuccess: (r) => {
+      toast.success(`+${r.coins} coins · +${r.xp} XP · ${r.streak}-day streak!`);
+      qc.invalidateQueries({ queryKey: ["daily-reward"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not claim reward"),
+  });
+  const reward = rewardQ.data;
   return (
     <div className="grid min-h-dvh place-items-center bg-background p-4">
       <div className="w-full max-w-sm rounded-3xl bg-card p-6 text-center shadow-elevated">
@@ -415,7 +427,7 @@ function DailyDone({ timeMs, stars, date, onHome }: { timeMs: number; stars: num
           <Calendar className="h-8 w-8" />
         </div>
         <h2 className="mt-3 text-2xl font-black">Daily challenge done!</h2>
-        <p className="mt-1 text-sm text-muted-foreground">You already cleared today's challenge ({date} UTC). Come back tomorrow for a new one.</p>
+        <p className="mt-1 text-sm text-muted-foreground">You cleared today's challenge ({date} UTC). Come back tomorrow for a new one.</p>
         <div className="mt-3 flex justify-center gap-1">
           {Array.from({ length: 3 }).map((_, i) => (
             <Star key={i} className={`h-7 w-7 ${i < stars ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
@@ -424,11 +436,39 @@ function DailyDone({ timeMs, stars, date, onHome }: { timeMs: number; stars: num
         <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 font-bold tabular-nums">
           <Timer className="h-4 w-4" /> {Math.floor(secs / 60)}:{(secs % 60).toString().padStart(2, "0")}
         </div>
-        <div className="mt-5"><Button className="w-full" onClick={onHome}>Home</Button></div>
+
+        {reward && (
+          <div className="mt-5 rounded-2xl border border-border bg-muted/40 p-4">
+            <div className="flex items-center justify-center gap-2 text-sm font-bold">
+              <Flame className={`h-4 w-4 ${reward.streak > 0 ? "text-warning" : "text-muted-foreground"}`} />
+              <span>{reward.claimedToday ? `${reward.streak}-day streak` : `Streak → ${reward.nextStreak} day${reward.nextStreak > 1 ? "s" : ""}`}</span>
+            </div>
+            {reward.claimedToday ? (
+              <p className="mt-2 text-sm text-success">Reward claimed for today ✓</p>
+            ) : (
+              <>
+                <div className="mt-2 flex items-center justify-center gap-3 text-sm font-bold">
+                  <span className="inline-flex items-center gap-1 text-warning"><Coins className="h-4 w-4" /> +{reward.preview.coins}</span>
+                  <span className="inline-flex items-center gap-1 text-primary"><Sparkles className="h-4 w-4" /> +{reward.preview.xp} XP</span>
+                </div>
+                <Button
+                  className="mt-3 w-full"
+                  disabled={claimMut.isPending}
+                  onClick={() => claimMut.mutate(undefined)}
+                >
+                  <Gift className="mr-1 h-4 w-4" /> {claimMut.isPending ? "Claiming…" : "Claim daily reward"}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="mt-5"><Button variant="secondary" className="w-full" onClick={onHome}>Home</Button></div>
       </div>
     </div>
   );
 }
+
 
 function RunOver({ reason, score, levels, onRetry, onHome }: { reason: "lives" | "time"; score: number; levels: number; onRetry: () => void; onHome: () => void }) {
   return (
