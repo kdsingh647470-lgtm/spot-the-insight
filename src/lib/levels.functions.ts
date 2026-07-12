@@ -54,6 +54,23 @@ export const getDailyLevel = createServerFn({ method: "GET" }).handler(async () 
   return pool[idx].id;
 });
 
+export const getDailyStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const startIso = new Date(today + "T00:00:00.000Z").toISOString();
+    const { data } = await context.supabase
+      .from("level_completions")
+      .select("time_ms, stars, level_id, completed_at")
+      .eq("user_id", context.userId)
+      .eq("mode", "daily")
+      .gte("completed_at", startIso)
+      .order("completed_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    return { date: today, completion: data ?? null };
+  });
+
 
 export const submitCompletion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -65,6 +82,19 @@ export const submitCompletion = createServerFn({ method: "POST" })
     mode: z.enum(["story", "daily", "infinite", "timed", "relax"]),
   }).parse(d))
   .handler(async ({ data, context }) => {
+    if (data.mode === "daily") {
+      // One daily completion per user per UTC date.
+      const startIso = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString();
+      const { data: existing } = await context.supabase
+        .from("level_completions")
+        .select("id")
+        .eq("user_id", context.userId)
+        .eq("mode", "daily")
+        .gte("completed_at", startIso)
+        .limit(1)
+        .maybeSingle();
+      if (existing) throw new Error("Daily challenge already completed today");
+    }
     const stars = data.mistakes === 0 && data.hints_used === 0 ? 3 : data.mistakes <= 1 ? 2 : 1;
     const coinsEarned = 50 + stars * 25 + (data.time_ms < 30000 ? 25 : 0);
     const xpEarned = 20 + stars * 10;
