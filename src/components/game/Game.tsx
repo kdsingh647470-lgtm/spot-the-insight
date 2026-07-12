@@ -406,6 +406,30 @@ function GameInner({
   );
 }
 
+function DailyDone({ timeMs, stars, date, onHome }: { timeMs: number; stars: number; date: string; onHome: () => void }) {
+  const secs = Math.floor(timeMs / 1000);
+  return (
+    <div className="grid min-h-dvh place-items-center bg-background p-4">
+      <div className="w-full max-w-sm rounded-3xl bg-card p-6 text-center shadow-elevated">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/20 text-success">
+          <Calendar className="h-8 w-8" />
+        </div>
+        <h2 className="mt-3 text-2xl font-black">Daily challenge done!</h2>
+        <p className="mt-1 text-sm text-muted-foreground">You already cleared today's challenge ({date} UTC). Come back tomorrow for a new one.</p>
+        <div className="mt-3 flex justify-center gap-1">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Star key={i} className={`h-7 w-7 ${i < stars ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
+          ))}
+        </div>
+        <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 font-bold tabular-nums">
+          <Timer className="h-4 w-4" /> {Math.floor(secs / 60)}:{(secs % 60).toString().padStart(2, "0")}
+        </div>
+        <div className="mt-5"><Button className="w-full" onClick={onHome}>Home</Button></div>
+      </div>
+    </div>
+  );
+}
+
 function RunOver({ reason, score, levels, onRetry, onHome }: { reason: "lives" | "time"; score: number; levels: number; onRetry: () => void; onHome: () => void }) {
   return (
     <div className="grid min-h-dvh place-items-center bg-background p-4">
