@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createPublicBackendClient, signLevelImages } from "./levels.server";
+import { createPublicBackendClient, rewardForStreak, signLevelImages, todayUtc, yesterdayUtc } from "./levels.server";
 
 export const listLevels = createServerFn({ method: "GET" }).handler(async () => {
   const sb = createPublicBackendClient();
@@ -128,13 +128,6 @@ export const spendHint = createServerFn({ method: "POST" })
     await context.supabase.from("profiles").update({ coins: prof.coins - cost }).eq("id", context.userId);
     return { remaining: prof.coins - cost };
   });
-
-function todayUtc() { return new Date().toISOString().slice(0, 10); }
-function yesterdayUtc() { const d = new Date(); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); }
-function rewardForStreak(streak: number) {
-  const cap = Math.min(streak, 7);
-  return { coins: 100 + cap * 20, xp: 25 + cap * 5 };
-}
 
 export const getDailyReward = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

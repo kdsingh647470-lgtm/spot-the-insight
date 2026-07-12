@@ -23,3 +23,18 @@ export async function signLevelImages(
     return signedUrlByPath.get(url.replace(/^storage:\/\//, "")) ?? url;
   });
 }
+
+export function todayUtc() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function yesterdayUtc() {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+export function rewardForStreak(streak: number) {
+  const cap = Math.min(streak, 7);
+  return { coins: 100 + cap * 20, xp: 25 + cap * 5 };
+}
