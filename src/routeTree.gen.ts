@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -16,8 +17,15 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlayModeRouteImport } from './routes/play.$mode'
 import { Route as ApiGenerateLevelImagesRouteImport } from './routes/api/generate-level-images'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as PlayModeLevelIdRouteImport } from './routes/play.$mode.$levelId'
+import { Route as AuthenticatedAdminLevelsIdRouteImport } from './routes/_authenticated/admin/levels.$id'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LeaderboardRoute = LeaderboardRouteImport.update({
   id: '/leaderboard',
   path: '/leaderboard',
@@ -52,29 +60,46 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const PlayModeLevelIdRoute = PlayModeLevelIdRouteImport.update({
   id: '/$levelId',
   path: '/$levelId',
   getParentRoute: () => PlayModeRoute,
 } as any)
+const AuthenticatedAdminLevelsIdRoute =
+  AuthenticatedAdminLevelsIdRouteImport.update({
+    id: '/admin/levels/$id',
+    path: '/admin/levels/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
   '/play/$mode': typeof PlayModeRouteWithChildren
   '/play/$mode/$levelId': typeof PlayModeLevelIdRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/admin/levels/$id': typeof AuthenticatedAdminLevelsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
   '/play/$mode': typeof PlayModeRouteWithChildren
   '/play/$mode/$levelId': typeof PlayModeLevelIdRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/admin/levels/$id': typeof AuthenticatedAdminLevelsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -82,10 +107,13 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
   '/play/$mode': typeof PlayModeRouteWithChildren
   '/play/$mode/$levelId': typeof PlayModeLevelIdRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/admin/levels/$id': typeof AuthenticatedAdminLevelsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -93,29 +121,38 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/leaderboard'
+    | '/sitemap.xml'
     | '/profile'
     | '/api/generate-level-images'
     | '/play/$mode'
     | '/play/$mode/$levelId'
+    | '/admin/'
+    | '/admin/levels/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/leaderboard'
+    | '/sitemap.xml'
     | '/profile'
     | '/api/generate-level-images'
     | '/play/$mode'
     | '/play/$mode/$levelId'
+    | '/admin'
+    | '/admin/levels/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/leaderboard'
+    | '/sitemap.xml'
     | '/_authenticated/profile'
     | '/api/generate-level-images'
     | '/play/$mode'
     | '/play/$mode/$levelId'
+    | '/_authenticated/admin/'
+    | '/_authenticated/admin/levels/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -123,12 +160,20 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   LeaderboardRoute: typeof LeaderboardRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiGenerateLevelImagesRoute: typeof ApiGenerateLevelImagesRoute
   PlayModeRoute: typeof PlayModeRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/leaderboard': {
       id: '/leaderboard'
       path: '/leaderboard'
@@ -178,6 +223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/play/$mode/$levelId': {
       id: '/play/$mode/$levelId'
       path: '/$levelId'
@@ -185,15 +237,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayModeLevelIdRouteImport
       parentRoute: typeof PlayModeRoute
     }
+    '/_authenticated/admin/levels/$id': {
+      id: '/_authenticated/admin/levels/$id'
+      path: '/admin/levels/$id'
+      fullPath: '/admin/levels/$id'
+      preLoaderRoute: typeof AuthenticatedAdminLevelsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminLevelsIdRoute: typeof AuthenticatedAdminLevelsIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminLevelsIdRoute: AuthenticatedAdminLevelsIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -216,6 +279,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   LeaderboardRoute: LeaderboardRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiGenerateLevelImagesRoute: ApiGenerateLevelImagesRoute,
   PlayModeRoute: PlayModeRouteWithChildren,
 }
