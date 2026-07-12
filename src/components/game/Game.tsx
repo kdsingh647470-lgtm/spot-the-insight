@@ -6,7 +6,7 @@ import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { getLevelById, submitCompletion, spendHint, getRandomLevel, getDailyLevel } from "@/lib/levels.functions";
+import { getLevelById, submitCompletion, spendHint, getRandomLevel, getDailyLevel, getDailyStatus } from "@/lib/levels.functions";
 
 type Mode = "story" | "daily" | "infinite" | "timed" | "relax";
 type Diff = { id: string; x: number; y: number; radius: number; label: string | null };
