@@ -71,6 +71,9 @@ function GameInner({ mode, data, onNext }: {
   const [hintTarget, setHintTarget] = useState<Diff | null>(null);
   const [showResult, setShowResult] = useState<null | "win" | "lose">(null);
   const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
+  const [comboPop, setComboPop] = useState<{ n: number; gain: number; k: number } | null>(null);
   const [session, setSession] = useState<any>(null);
   const startRef = useRef(Date.now());
   const timeLimit = mode === "timed" ? 90 : mode === "relax" ? undefined : undefined;
@@ -108,7 +111,14 @@ function GameInner({ mode, data, onNext }: {
       playBeep(880, 0.12, "triangle");
       const nf = [...found, { id: hit.id, x: hit.x, y: hit.y }];
       setFound(nf);
-      setScore((s) => s + 100);
+      const newCombo = combo + 1;
+      const multiplier = Math.min(newCombo, 5);
+      const gain = 100 * multiplier;
+      setCombo(newCombo);
+      setBestCombo((b) => Math.max(b, newCombo));
+      setScore((s) => s + gain);
+      setComboPop({ n: newCombo, gain, k: Date.now() });
+      if (newCombo >= 2) playBeep(1100 + newCombo * 60, 0.08, "triangle");
       if (nf.length >= totalDiffs) {
         setShowResult("win");
         void (async () => {
@@ -125,6 +135,8 @@ function GameInner({ mode, data, onNext }: {
       setWrong({ x: px, y: py, k: Date.now() });
       setShakeKey((k) => k + 1);
       setMistakes((m) => m + 1);
+      setCombo(0);
+      setComboPop(null);
       if (!infiniteHints) {
         setLives((l) => {
           const nl = l - 1;
@@ -155,6 +167,7 @@ function GameInner({ mode, data, onNext }: {
 
   function reset() {
     setFound([]); setLives(3); setHints(0); setMistakes(0); setElapsed(0); setScore(0);
+    setCombo(0); setBestCombo(0); setComboPop(null);
     setShowResult(null); startRef.current = Date.now();
   }
 
@@ -180,16 +193,35 @@ function GameInner({ mode, data, onNext }: {
         <Button variant="ghost" size="icon" onClick={() => setPaused(true)} aria-label="Pause"><Pause className="h-5 w-5" /></Button>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-3 md:flex-row md:items-stretch">
+      <div className="relative flex flex-1 flex-col gap-3 p-3 md:flex-row md:items-stretch">
         <GameImage src={data.image_a_url} onTap={handleTap} found={found} wrong={wrong} hint={hintTarget} shakeKey={shakeKey} />
         <GameImage src={data.image_b_url} onTap={handleTap} found={found} wrong={wrong} hint={hintTarget} shakeKey={shakeKey} />
+        <AnimatePresence>
+          {comboPop && comboPop.n >= 2 && (
+            <motion.div
+              key={comboPop.k}
+              initial={{ opacity: 0, scale: 0.6, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: -20 }}
+              transition={{ type: "spring", stiffness: 320, damping: 18 }}
+              className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-warning px-4 py-1.5 text-sm font-black text-warning-foreground shadow-elevated"
+            >
+              {comboPop.n}× COMBO · +{comboPop.gain}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="flex items-center justify-between gap-2 border-t border-border bg-background/80 px-3 py-3 backdrop-blur">
         <Button variant="secondary" onClick={useHint}>
           <Lightbulb className="mr-1 h-4 w-4" /> Hint {infiniteHints ? "" : "(25)"}
         </Button>
-        <div className="text-sm font-bold tabular-nums">Score {score}</div>
+        <div className="flex items-center gap-2 text-sm font-bold tabular-nums">
+          {combo >= 2 && (
+            <span className="rounded-full bg-warning/20 px-2 py-0.5 text-warning">×{Math.min(combo, 5)}</span>
+          )}
+          <span>Score {score}</span>
+        </div>
         <Button variant="ghost" onClick={reset}><RotateCcw className="mr-1 h-4 w-4" /> Restart</Button>
       </div>
 
@@ -216,10 +248,11 @@ function GameInner({ mode, data, onNext }: {
                   <Star key={i} className={`h-8 w-8 ${i < stars ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
                 ))}
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+              <div className="mt-3 grid grid-cols-4 gap-2 text-sm">
                 <Stat label="Time" value={formatTime(Math.floor((Date.now() - startRef.current) / 1000))} />
                 <Stat label="Mistakes" value={String(mistakes)} />
                 <Stat label="Hints" value={String(hints)} />
+                <Stat label="Best combo" value={`×${bestCombo}`} />
               </div>
               <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-warning/15 px-3 py-1 font-bold text-warning">
                 <Coins className="h-4 w-4" /> +{score}
