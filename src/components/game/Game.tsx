@@ -414,9 +414,12 @@ function DailyDone({ timeMs, stars, date, onHome }: { timeMs: number; stars: num
   const claimMut = useMutation({
     mutationFn: claimDailyReward,
     onSuccess: (r) => {
+      setClaimAnim(true);
       toast.success(`+${r.coins} coins · +${r.xp} XP · ${r.streak}-day streak!`);
-      qc.invalidateQueries({ queryKey: ["daily-reward"] });
-      qc.invalidateQueries({ queryKey: ["profile"] });
+      setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ["daily-reward"] });
+        qc.invalidateQueries({ queryKey: ["profile"] });
+      }, 1200);
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not claim reward"),
   });
