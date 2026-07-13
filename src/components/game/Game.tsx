@@ -455,13 +455,42 @@ function DailyDone({ timeMs, stars, date, onHome }: { timeMs: number; stars: num
                   <span className="inline-flex items-center gap-1 text-warning"><Coins className="h-4 w-4" /> +{reward.preview.coins}</span>
                   <span className="inline-flex items-center gap-1 text-primary"><Sparkles className="h-4 w-4" /> +{reward.preview.xp} XP</span>
                 </div>
-                <Button
-                  className="mt-3 w-full"
-                  disabled={claimMut.isPending}
-                  onClick={() => claimMut.mutate(undefined)}
-                >
-                  <Gift className="mr-1 h-4 w-4" /> {claimMut.isPending ? "Claiming…" : "Claim daily reward"}
-                </Button>
+                <div className="relative mt-3 flex h-11 justify-center">
+                  <AnimatePresence mode="wait">
+                    {claimAnim ? (
+                      <motion.div
+                        key="success"
+                        initial={{ width: "100%", borderRadius: "var(--radius-lg)", backgroundColor: "var(--color-primary)" }}
+                        animate={{ width: 56, borderRadius: 9999, backgroundColor: "var(--color-success)" }}
+                        transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                        className="relative flex h-11 items-center justify-center overflow-hidden text-primary-foreground shadow-soft"
+                      >
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.18, type: "spring", stiffness: 260, damping: 16 }}
+                        >
+                          <Check className="h-6 w-6" strokeWidth={3} />
+                        </motion.div>
+                        {[0, 1].map((i) => (
+                          <motion.div
+                            key={i}
+                            className="absolute inset-0 rounded-full border-2 border-success"
+                            initial={{ scale: 1, opacity: 0.5 }}
+                            animate={{ scale: 2.4, opacity: 0 }}
+                            transition={{ delay: i * 0.15, duration: 0.8, ease: "easeOut" }}
+                          />
+                        ))}
+                      </motion.div>
+                    ) : (
+                      <motion.div key="button" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} className="w-full">
+                        <Button className="w-full" disabled={claimMut.isPending} onClick={() => claimMut.mutate(undefined)}>
+                          <Gift className="mr-1 h-4 w-4" /> {claimMut.isPending ? "Claiming…" : "Claim daily reward"}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </>
             )}
           </div>
