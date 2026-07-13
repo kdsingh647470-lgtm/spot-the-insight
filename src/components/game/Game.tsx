@@ -409,6 +409,7 @@ function GameInner({
 function DailyDone({ timeMs, stars, date, onHome }: { timeMs: number; stars: number; date: string; onHome: () => void }) {
   const secs = Math.floor(timeMs / 1000);
   const qc = useQueryClient();
+  const [claimAnim, setClaimAnim] = useState(false);
   const rewardQ = useQuery({ queryKey: ["daily-reward"], queryFn: () => getDailyReward(), retry: false });
   const claimMut = useMutation({
     mutationFn: claimDailyReward,
