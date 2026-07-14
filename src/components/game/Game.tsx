@@ -12,7 +12,14 @@ type Mode = "story" | "daily" | "infinite" | "timed" | "relax";
 type Diff = { id: string; x: number; y: number; radius: number; label: string | null };
 type Found = { id: string; x: number; y: number };
 
-const TAP_TOLERANCE = 0.06;
+// Hit tolerance = the difference's own radius PLUS a forgiveness buffer, so
+// taps just outside the marked circle still count. The buffer combines a
+// percentage of image width (scales with layout) and a pixel floor (keeps
+// small screens tappable). There is also an absolute minimum radius so tiny
+// differences remain hittable.
+const HIT_BUFFER_PCT = 0.04;   // 4% of image width
+const HIT_BUFFER_PX = 18;      // additional fixed pixels
+const MIN_HIT_RADIUS = 0.06;   // floor on the base radius (normalized)
 
 type ModeConfig = {
   label: string;
