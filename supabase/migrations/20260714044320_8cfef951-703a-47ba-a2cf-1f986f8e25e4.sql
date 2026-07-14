@@ -1,0 +1,1 @@
+CREATE POLICY "anon read level images" ON storage.objects FOR SELECT TO anon USING (bucket_id = 'level-images');
