@@ -151,6 +151,8 @@ function GameInner({
   const [hints, setHints] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings] = useGameSettings();
   const [elapsed, setElapsed] = useState(0);              // seconds since level start
   const [timeLeft, setTimeLeft] = useState(run.timeRemaining); // seconds remaining (timed)
   const [wrong, setWrong] = useState<{ x: number; y: number; k: number } | null>(null);
