@@ -321,7 +321,9 @@ function GameInner({
         <div className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
           <Sparkles className="h-4 w-4" /> {found.length}/{totalDiffs}
         </div>
+        <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} aria-label="Tap accuracy"><Settings2 className="h-5 w-5" /></Button>
         <Button variant="ghost" size="icon" onClick={() => setPaused(true)} aria-label="Pause"><Pause className="h-5 w-5" /></Button>
+        <GameSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
 
       <div className="relative flex flex-1 flex-col gap-3 p-3 md:flex-row md:items-stretch">
