@@ -581,7 +581,7 @@ function GameImage({
   src, onTap, found, wrong, hint, shakeKey,
 }: {
   src: string;
-  onTap: (x: number, y: number) => void;
+  onTap: (x: number, y: number, containerWidth: number) => void;
   found: Found[];
   wrong: { x: number; y: number; k: number } | null;
   hint: Diff | null;
@@ -590,7 +590,7 @@ function GameImage({
   const ref = useRef<HTMLDivElement>(null);
   function onClick(e: React.PointerEvent) {
     const rect = ref.current!.getBoundingClientRect();
-    onTap((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height);
+    onTap((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height, rect.width);
   }
   return (
     <div
