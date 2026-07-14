@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { DEFAULT_SETTINGS, SETTINGS_BOUNDS, useGameSettings, type GameSettings } from "@/lib/game-settings";
+import { DEFAULT_SETTINGS, PRESETS, SETTINGS_BOUNDS, matchPreset, useGameSettings, type GameSettings } from "@/lib/game-settings";
 import { RotateCcw, Target } from "lucide-react";
 
 export function GameSettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
