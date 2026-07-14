@@ -12,7 +12,14 @@ type Mode = "story" | "daily" | "infinite" | "timed" | "relax";
 type Diff = { id: string; x: number; y: number; radius: number; label: string | null };
 type Found = { id: string; x: number; y: number };
 
-const TAP_TOLERANCE = 0.06;
+// Hit tolerance = the difference's own radius PLUS a forgiveness buffer, so
+// taps just outside the marked circle still count. The buffer combines a
+// percentage of image width (scales with layout) and a pixel floor (keeps
+// small screens tappable). There is also an absolute minimum radius so tiny
+// differences remain hittable.
+const HIT_BUFFER_PCT = 0.04;   // 4% of image width
+const HIT_BUFFER_PX = 18;      // additional fixed pixels
+const MIN_HIT_RADIUS = 0.06;   // floor on the base radius (normalized)
 
 type ModeConfig = {
   label: string;
@@ -199,18 +206,20 @@ function GameInner({
     } catch {}
   }
 
-  function handleTap(px: number, py: number) {
+  function handleTap(px: number, py: number, containerWidth: number) {
     if (paused || showResult) return;
     // Coordinates are normalized (0-1) inside a 4:3 container. A unit in y is
-    // shorter in pixels than a unit in x, so scale dy to match x-space before
-    // measuring distance — otherwise taps that visually land inside the circle
-    // get rejected as "wrong".
+    // shorter in pixels than a unit in x, so scale dy to x-space before
+    // measuring distance. Tolerance = radius + percent buffer + pixel buffer
+    // (converted to normalized x-units via the container width).
     const ASPECT = 4 / 3; // width / height
+    const pxBufferNorm = containerWidth > 0 ? HIT_BUFFER_PX / containerWidth : 0;
     const hit = data.differences.find((d) => {
       if (found.some((f) => f.id === d.id)) return false;
       const dx = d.x - px;
       const dy = (d.y - py) / ASPECT;
-      return Math.hypot(dx, dy) <= Math.max(d.radius, TAP_TOLERANCE);
+      const tolerance = Math.max(d.radius, MIN_HIT_RADIUS) + HIT_BUFFER_PCT + pxBufferNorm;
+      return Math.hypot(dx, dy) <= tolerance;
     });
     if (hit) {
       playBeep(880, 0.12, "triangle");
@@ -572,7 +581,7 @@ function GameImage({
   src, onTap, found, wrong, hint, shakeKey,
 }: {
   src: string;
-  onTap: (x: number, y: number) => void;
+  onTap: (x: number, y: number, containerWidth: number) => void;
   found: Found[];
   wrong: { x: number; y: number; k: number } | null;
   hint: Diff | null;
@@ -581,7 +590,7 @@ function GameImage({
   const ref = useRef<HTMLDivElement>(null);
   function onClick(e: React.PointerEvent) {
     const rect = ref.current!.getBoundingClientRect();
-    onTap((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height);
+    onTap((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height, rect.width);
   }
   return (
     <div
