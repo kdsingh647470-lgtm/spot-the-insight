@@ -208,12 +208,12 @@ function GameInner({
     // measuring distance. Tolerance = radius + percent buffer + pixel buffer
     // (converted to normalized x-units via the container width).
     const ASPECT = 4 / 3; // width / height
-    const pxBufferNorm = containerWidth > 0 ? HIT_BUFFER_PX / containerWidth : 0;
+    const pxBufferNorm = containerWidth > 0 ? settings.bufferPx / containerWidth : 0;
     const hit = data.differences.find((d) => {
       if (found.some((f) => f.id === d.id)) return false;
       const dx = d.x - px;
       const dy = (d.y - py) / ASPECT;
-      const tolerance = Math.max(d.radius, MIN_HIT_RADIUS) + HIT_BUFFER_PCT + pxBufferNorm;
+      const tolerance = Math.max(d.radius, settings.minRadius) + settings.bufferPct + pxBufferNorm;
       return Math.hypot(dx, dy) <= tolerance;
     });
     if (hit) {
