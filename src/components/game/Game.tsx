@@ -80,12 +80,17 @@ export function Game({ mode, levelId: initialLevelId }: { mode: Mode; levelId?: 
   }
 
   // Daily: block replay if already completed today for this signed-in user.
+  const [hasSession, setHasSession] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setHasSession(!!data.session));
+  }, []);
   const dailyStatusQ = useQuery({
     queryKey: ["daily-status"],
     queryFn: () => getDailyStatus(),
-    enabled: mode === "daily",
+    enabled: mode === "daily" && hasSession,
     retry: false,
   });
+
   if (mode === "daily" && dailyStatusQ.data?.completion) {
     const c = dailyStatusQ.data.completion;
     return <DailyDone timeMs={c.time_ms} stars={c.stars} date={dailyStatusQ.data.date} onHome={() => navigate({ to: "/" })} />;
