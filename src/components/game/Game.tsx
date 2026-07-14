@@ -201,7 +201,17 @@ function GameInner({
 
   function handleTap(px: number, py: number) {
     if (paused || showResult) return;
-    const hit = data.differences.find((d) => !found.some((f) => f.id === d.id) && Math.hypot(d.x - px, d.y - py) <= Math.max(d.radius, TAP_TOLERANCE));
+    // Coordinates are normalized (0-1) inside a 4:3 container. A unit in y is
+    // shorter in pixels than a unit in x, so scale dy to match x-space before
+    // measuring distance — otherwise taps that visually land inside the circle
+    // get rejected as "wrong".
+    const ASPECT = 4 / 3; // width / height
+    const hit = data.differences.find((d) => {
+      if (found.some((f) => f.id === d.id)) return false;
+      const dx = d.x - px;
+      const dy = (d.y - py) / ASPECT;
+      return Math.hypot(dx, dy) <= Math.max(d.radius, TAP_TOLERANCE);
+    });
     if (hit) {
       playBeep(880, 0.12, "triangle");
       const nf = [...found, { id: hit.id, x: hit.x, y: hit.y }];
