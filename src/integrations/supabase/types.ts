@@ -283,19 +283,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard: {
+        Row: {
+          avatar_url: string | null
+          id: string | null
+          level: number | null
+          username: string | null
+          xp: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      get_leaderboard: {
-        Args: never
-        Returns: {
-          avatar_url: string
-          id: string
-          level: number
-          username: string
-          xp: number
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
