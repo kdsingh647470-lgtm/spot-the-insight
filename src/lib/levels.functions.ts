@@ -184,8 +184,15 @@ export const claimDailyReward = createServerFn({ method: "POST" })
 
 
 export const getLeaderboard = createServerFn({ method: "GET" }).handler(async () => {
-  const sb = createPublicBackendClient();
-  const { data, error } = await sb.rpc("get_leaderboard");
+  // Read via service role so we can join profiles without opening the table to anon,
+  // and only project the columns safe to expose publicly.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("id, username, avatar_url, xp, level")
+    .order("xp", { ascending: false })
+    .limit(50);
   if (error) throw new Error(error.message);
   return data ?? [];
 });
+
