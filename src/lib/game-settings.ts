@@ -14,6 +14,24 @@ export const DEFAULT_SETTINGS: GameSettings = {
   bufferPx: 18,
 };
 
+export type PresetId = "precise" | "balanced" | "relaxed";
+
+export const PRESETS: { id: PresetId; label: string; description: string; values: GameSettings }[] = [
+  { id: "precise",  label: "Precise",  description: "Tight hitboxes for pointer play.", values: { minRadius: 0.04, bufferPct: 0.01, bufferPx: 6 } },
+  { id: "balanced", label: "Balanced", description: "Default forgiveness for most devices.", values: { ...DEFAULT_SETTINGS } },
+  { id: "relaxed",  label: "Relaxed",  description: "Generous taps for small screens.", values: { minRadius: 0.08, bufferPct: 0.07, bufferPx: 32 } },
+];
+
+export function matchPreset(s: GameSettings): PresetId | null {
+  const eq = (a: number, b: number, tol: number) => Math.abs(a - b) <= tol;
+  const found = PRESETS.find((p) =>
+    eq(p.values.minRadius, s.minRadius, 0.003) &&
+    eq(p.values.bufferPct, s.bufferPct, 0.003) &&
+    eq(p.values.bufferPx,  s.bufferPx,  0.5),
+  );
+  return found?.id ?? null;
+}
+
 export const SETTINGS_BOUNDS = {
   minRadius: { min: 0.02, max: 0.15, step: 0.005, label: "Base radius", suffix: "%" as const, display: (v: number) => `${Math.round(v * 100)}%` },
   bufferPct: { min: 0,    max: 0.15, step: 0.005, label: "Percent buffer", suffix: "%" as const, display: (v: number) => `${Math.round(v * 100)}%` },
