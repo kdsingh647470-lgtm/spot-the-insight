@@ -2,24 +2,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
-import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles, Infinity as InfinityIcon, Leaf, Calendar, Gift, Flame, Check } from "lucide-react";
+import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles, Infinity as InfinityIcon, Leaf, Calendar, Gift, Flame, Check, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getLevelById, submitCompletion, spendHint, getRandomLevel, getDailyLevel, getDailyStatus, getDailyReward, claimDailyReward } from "@/lib/levels.functions";
+import { useGameSettings } from "@/lib/game-settings";
+import { GameSettingsDialog } from "@/components/game/GameSettingsDialog";
 
 type Mode = "story" | "daily" | "infinite" | "timed" | "relax";
 type Diff = { id: string; x: number; y: number; radius: number; label: string | null };
 type Found = { id: string; x: number; y: number };
-
-// Hit tolerance = the difference's own radius PLUS a forgiveness buffer, so
-// taps just outside the marked circle still count. The buffer combines a
-// percentage of image width (scales with layout) and a pixel floor (keeps
-// small screens tappable). There is also an absolute minimum radius so tiny
-// differences remain hittable.
-const HIT_BUFFER_PCT = 0.04;   // 4% of image width
-const HIT_BUFFER_PX = 18;      // additional fixed pixels
-const MIN_HIT_RADIUS = 0.06;   // floor on the base radius (normalized)
 
 type ModeConfig = {
   label: string;
