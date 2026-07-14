@@ -2,24 +2,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
-import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles, Infinity as InfinityIcon, Leaf, Calendar, Gift, Flame, Check } from "lucide-react";
+import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles, Infinity as InfinityIcon, Leaf, Calendar, Gift, Flame, Check, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getLevelById, submitCompletion, spendHint, getRandomLevel, getDailyLevel, getDailyStatus, getDailyReward, claimDailyReward } from "@/lib/levels.functions";
+import { useGameSettings } from "@/lib/game-settings";
+import { GameSettingsDialog } from "@/components/game/GameSettingsDialog";
 
 type Mode = "story" | "daily" | "infinite" | "timed" | "relax";
 type Diff = { id: string; x: number; y: number; radius: number; label: string | null };
 type Found = { id: string; x: number; y: number };
-
-// Hit tolerance = the difference's own radius PLUS a forgiveness buffer, so
-// taps just outside the marked circle still count. The buffer combines a
-// percentage of image width (scales with layout) and a pixel floor (keeps
-// small screens tappable). There is also an absolute minimum radius so tiny
-// differences remain hittable.
-const HIT_BUFFER_PCT = 0.04;   // 4% of image width
-const HIT_BUFFER_PX = 18;      // additional fixed pixels
-const MIN_HIT_RADIUS = 0.06;   // floor on the base radius (normalized)
 
 type ModeConfig = {
   label: string;
@@ -158,6 +151,8 @@ function GameInner({
   const [hints, setHints] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings] = useGameSettings();
   const [elapsed, setElapsed] = useState(0);              // seconds since level start
   const [timeLeft, setTimeLeft] = useState(run.timeRemaining); // seconds remaining (timed)
   const [wrong, setWrong] = useState<{ x: number; y: number; k: number } | null>(null);
@@ -213,12 +208,12 @@ function GameInner({
     // measuring distance. Tolerance = radius + percent buffer + pixel buffer
     // (converted to normalized x-units via the container width).
     const ASPECT = 4 / 3; // width / height
-    const pxBufferNorm = containerWidth > 0 ? HIT_BUFFER_PX / containerWidth : 0;
+    const pxBufferNorm = containerWidth > 0 ? settings.bufferPx / containerWidth : 0;
     const hit = data.differences.find((d) => {
       if (found.some((f) => f.id === d.id)) return false;
       const dx = d.x - px;
       const dy = (d.y - py) / ASPECT;
-      const tolerance = Math.max(d.radius, MIN_HIT_RADIUS) + HIT_BUFFER_PCT + pxBufferNorm;
+      const tolerance = Math.max(d.radius, settings.minRadius) + settings.bufferPct + pxBufferNorm;
       return Math.hypot(dx, dy) <= tolerance;
     });
     if (hit) {
@@ -326,7 +321,9 @@ function GameInner({
         <div className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
           <Sparkles className="h-4 w-4" /> {found.length}/{totalDiffs}
         </div>
+        <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} aria-label="Tap accuracy"><Settings2 className="h-5 w-5" /></Button>
         <Button variant="ghost" size="icon" onClick={() => setPaused(true)} aria-label="Pause"><Pause className="h-5 w-5" /></Button>
+        <GameSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
 
       <div className="relative flex flex-1 flex-col gap-3 p-3 md:flex-row md:items-stretch">
