@@ -15,14 +15,14 @@ export async function signLevelImages(
   urls: string[],
 ) {
   const paths = urls.map((url) => url.replace(/^storage:\/\//, ""));
-  const { data } = await client.storage.from("level-images").createSignedUrls(paths, 3600);
-  const signedUrlByPath = new Map(data?.map((item) => [item.path, item.signedUrl]) ?? []);
-
-  return urls.map((url) => {
+  const { data, error } = await client.storage.from("level-images").createSignedUrls(paths, 3600);
+  if (error) console.error("signLevelImages error", error.message);
+  return urls.map((url, i) => {
     if (!url.startsWith("storage://")) return url;
-    return signedUrlByPath.get(url.replace(/^storage:\/\//, "")) ?? url;
+    return data?.[i]?.signedUrl ?? url;
   });
 }
+
 
 export function todayUtc() {
   return new Date().toISOString().slice(0, 10);
