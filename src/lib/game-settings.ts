@@ -14,9 +14,9 @@ export type GameSettings = {
 };
 
 export const DEFAULT_SETTINGS: GameSettings = {
-  minRadius: 0.06,
-  bufferPct: 0.04,
-  bufferPx: 18,
+  minRadius: 0.04,
+  bufferPct: 0.015,
+  bufferPx: 8,
   offsetX: 0,
   offsetY: 0,
   scale: 1,
@@ -28,9 +28,9 @@ export type PresetId = "precise" | "balanced" | "relaxed";
 type TolerancePreset = Pick<GameSettings, "minRadius" | "bufferPct" | "bufferPx">;
 
 export const PRESETS: { id: PresetId; label: string; description: string; values: TolerancePreset }[] = [
-  { id: "precise",  label: "Precise",  description: "Tight hitboxes for pointer play.", values: { minRadius: 0.04, bufferPct: 0.01, bufferPx: 6 } },
-  { id: "balanced", label: "Balanced", description: "Default forgiveness for most devices.", values: { minRadius: DEFAULT_SETTINGS.minRadius, bufferPct: DEFAULT_SETTINGS.bufferPct, bufferPx: DEFAULT_SETTINGS.bufferPx } },
-  { id: "relaxed",  label: "Relaxed",  description: "Generous taps for small screens.", values: { minRadius: 0.08, bufferPct: 0.07, bufferPx: 32 } },
+  { id: "precise",  label: "Precise",  description: "Strict — tap must be on the difference.", values: { minRadius: 0.025, bufferPct: 0,     bufferPx: 0  } },
+  { id: "balanced", label: "Balanced", description: "Default forgiveness for most devices.",   values: { minRadius: DEFAULT_SETTINGS.minRadius, bufferPct: DEFAULT_SETTINGS.bufferPct, bufferPx: DEFAULT_SETTINGS.bufferPx } },
+  { id: "relaxed",  label: "Relaxed",  description: "More forgiving for small screens.",       values: { minRadius: 0.06,  bufferPct: 0.03,  bufferPx: 14 } },
 ];
 
 export function applyPreset(current: GameSettings, id: PresetId): GameSettings {
