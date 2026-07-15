@@ -6,6 +6,11 @@ export type GameSettings = {
   minRadius: number;     // normalized (fraction of image width)
   bufferPct: number;     // normalized (fraction of image width)
   bufferPx: number;      // absolute pixels added on top
+  // Calibration transform: adjustedX = (tapX - offsetX) / scale.
+  // Defaults are identity (no adjustment).
+  offsetX: number;
+  offsetY: number;
+  scale: number;
 };
 
 export const DEFAULT_SETTINGS: GameSettings = {
