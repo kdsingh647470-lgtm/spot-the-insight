@@ -209,13 +209,24 @@ function GameInner({
     // (converted to normalized x-units via the container width).
     const ASPECT = 4 / 3; // width / height
     const pxBufferNorm = containerWidth > 0 ? settings.bufferPx / containerWidth : 0;
-    const hit = data.differences.find((d) => {
-      if (found.some((f) => f.id === d.id)) return false;
+    // Pick the CLOSEST unfound difference within tolerance (not just the
+    // first one). Otherwise a tap on an unrelated shape can register a
+    // hit on a far-away difference that happens to be inside a very
+    // generous combined radius.
+    let hit: Diff | undefined;
+    let bestDist = Infinity;
+    for (const d of data.differences) {
+      if (found.some((f) => f.id === d.id)) continue;
       const dx = d.x - px;
       const dy = (d.y - py) / ASPECT;
-      const tolerance = Math.max(d.radius, settings.minRadius) + settings.bufferPct + pxBufferNorm;
-      return Math.hypot(dx, dy) <= tolerance;
-    });
+      const dist = Math.hypot(dx, dy);
+      const baseRadius = d.radius > 0 ? d.radius : settings.minRadius;
+      const tolerance = baseRadius + settings.bufferPct + pxBufferNorm;
+      if (dist <= tolerance && dist < bestDist) {
+        bestDist = dist;
+        hit = d;
+      }
+    }
     if (hit) {
       playBeep(880, 0.12, "triangle");
       const nf = [...found, { id: hit.id, x: hit.x, y: hit.y }];
