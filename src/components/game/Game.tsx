@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getLevelById, submitCompletion, spendHint, getRandomLevel, getDailyLevel, getDailyStatus, getDailyReward, claimDailyReward } from "@/lib/levels.functions";
-import { useGameSettings } from "@/lib/game-settings";
+import { useGameSettings, calibrateTap } from "@/lib/game-settings";
 import { GameSettingsDialog } from "@/components/game/GameSettingsDialog";
 
 type Mode = "story" | "daily" | "infinite" | "timed" | "relax";
@@ -201,8 +201,11 @@ function GameInner({
     } catch {}
   }
 
-  function handleTap(px: number, py: number, containerWidth: number) {
+  function handleTap(rawX: number, rawY: number, containerWidth: number) {
     if (paused || showResult) return;
+    // Apply per-device calibration BEFORE hit-testing so a systematic
+    // touch offset/scale on this screen is corrected first.
+    const { x: px, y: py } = calibrateTap(rawX, rawY, settings);
     // Coordinates are normalized (0-1) inside a 4:3 container. A unit in y is
     // shorter in pixels than a unit in x, so scale dy to x-space before
     // measuring distance. Tolerance = radius + percent buffer + pixel buffer
