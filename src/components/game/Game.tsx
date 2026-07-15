@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getLevelById, submitCompletion, spendHint, getRandomLevel, getDailyLevel, getDailyStatus, getDailyReward, claimDailyReward } from "@/lib/levels.functions";
-import { useGameSettings } from "@/lib/game-settings";
+import { useGameSettings, calibrateTap } from "@/lib/game-settings";
 import { GameSettingsDialog } from "@/components/game/GameSettingsDialog";
 
 type Mode = "story" | "daily" | "infinite" | "timed" | "relax";
