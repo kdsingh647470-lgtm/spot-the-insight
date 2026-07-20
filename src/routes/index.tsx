@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Sparkles, Calendar, Infinity as InfIcon, Timer, Leaf, Trophy } from "lucide-react";
+import { Sparkles, Calendar, Infinity as InfIcon, Timer, Leaf, Trophy, Map as MapIcon } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { AdBanner } from "@/components/AdBanner";
 
@@ -13,6 +13,7 @@ const modes = [
   { to: "/play/timed" as const, icon: Timer, title: "Timed Mode", desc: "Beat the clock", tint: "bg-destructive/15 text-destructive" },
   { to: "/play/relax" as const, icon: Leaf, title: "Relax Mode", desc: "No timer, unlimited hints", tint: "bg-success/15 text-success" },
 ];
+
 
 function Home() {
   return (
