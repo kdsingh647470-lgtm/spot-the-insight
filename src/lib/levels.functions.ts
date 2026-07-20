@@ -32,6 +32,55 @@ export const getRandomLevel = createServerFn({ method: "GET" }).handler(async ()
   return pick.id;
 });
 
+// Story map: every published level, grouped client-side by world.
+export const getStoryMap = createServerFn({ method: "GET" }).handler(async () => {
+  const sb = createPublicBackendClient();
+  const { data, error } = await sb.from("levels")
+    .select("id, world, level_number, title, difficulty, image_a_url")
+    .eq("published", true)
+    .order("world").order("level_number");
+  if (error) throw new Error(error.message);
+  const [signed] = await Promise.all([
+    signLevelImages(sb, (data ?? []).map((l) => l.image_a_url)),
+  ]);
+  return (data ?? []).map((l, i) => ({ ...l, image_a_url: signed[i] }));
+});
+
+// Best stars per level for the signed-in user.
+export const getMyStoryProgress = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase
+      .from("level_completions")
+      .select("level_id, stars")
+      .eq("user_id", context.userId);
+    const best: Record<string, number> = {};
+    for (const c of data ?? []) {
+      if (!best[c.level_id] || c.stars > best[c.level_id]) best[c.level_id] = c.stars;
+    }
+    return best;
+  });
+
+// Next level in the same world by (world, level_number). Returns null if
+// the current level is the last in its world (world complete).
+export const getNextStoryLevel = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({ currentId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const sb = createPublicBackendClient();
+    const { data: cur } = await sb.from("levels").select("world, level_number").eq("id", data.currentId).maybeSingle();
+    if (!cur) return null;
+    const { data: nxt } = await sb.from("levels")
+      .select("id")
+      .eq("published", true)
+      .eq("world", cur.world)
+      .gt("level_number", cur.level_number)
+      .order("level_number", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    return nxt?.id ?? null;
+  });
+
+
 export const getDailyLevel = createServerFn({ method: "GET" }).handler(async () => {
   const sb = createPublicBackendClient();
   const today = new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
