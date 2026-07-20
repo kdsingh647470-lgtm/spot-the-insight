@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StoryRouteImport } from './routes/story'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -21,6 +22,11 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as PlayModeLevelIdRouteImport } from './routes/play.$mode.$levelId'
 import { Route as AuthenticatedAdminLevelsIdRouteImport } from './routes/_authenticated/admin/levels.$id'
 
+const StoryRoute = StoryRouteImport.update({
+  id: '/story',
+  path: '/story',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/leaderboard': typeof LeaderboardRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/story': typeof StoryRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
   '/play/$mode': typeof PlayModeRouteWithChildren
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/leaderboard': typeof LeaderboardRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/story': typeof StoryRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
   '/play/$mode': typeof PlayModeRouteWithChildren
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/leaderboard': typeof LeaderboardRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/story': typeof StoryRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
   '/play/$mode': typeof PlayModeRouteWithChildren
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/leaderboard'
     | '/sitemap.xml'
+    | '/story'
     | '/profile'
     | '/api/generate-level-images'
     | '/play/$mode'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/leaderboard'
     | '/sitemap.xml'
+    | '/story'
     | '/profile'
     | '/api/generate-level-images'
     | '/play/$mode'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/leaderboard'
     | '/sitemap.xml'
+    | '/story'
     | '/_authenticated/profile'
     | '/api/generate-level-images'
     | '/play/$mode'
@@ -161,12 +173,20 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   LeaderboardRoute: typeof LeaderboardRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StoryRoute: typeof StoryRoute
   ApiGenerateLevelImagesRoute: typeof ApiGenerateLevelImagesRoute
   PlayModeRoute: typeof PlayModeRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/story': {
+      id: '/story'
+      path: '/story'
+      fullPath: '/story'
+      preLoaderRoute: typeof StoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -280,19 +300,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   LeaderboardRoute: LeaderboardRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StoryRoute: StoryRoute,
   ApiGenerateLevelImagesRoute: ApiGenerateLevelImagesRoute,
   PlayModeRoute: PlayModeRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
