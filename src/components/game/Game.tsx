@@ -52,6 +52,8 @@ export function Game({ mode, levelId: initialLevelId }: { mode: Mode; levelId?: 
 
   useEffect(() => {
     if (initialLevelId) return;
+    // Story mode is a linear campaign — always enter through the world map.
+    if (mode === "story") { navigate({ to: "/story" }); return; }
     (async () => {
       const id = mode === "daily" ? await getDailyLevel() : await getRandomLevel();
       if (!id) { toast.error("No levels available yet. Ask an admin to add some!"); navigate({ to: "/" }); return; }
@@ -67,9 +69,18 @@ export function Game({ mode, levelId: initialLevelId }: { mode: Mode; levelId?: 
   });
 
   async function pickNext() {
+    if (mode === "story") {
+      if (!levelId) { navigate({ to: "/story" }); return; }
+      const nextId = await getNextStoryLevel({ data: { currentId: levelId } });
+      if (nextId) { setLevelId(nextId); return; }
+      toast.success("World complete! 🎉");
+      navigate({ to: "/story" });
+      return;
+    }
     const id = mode === "daily" ? await getDailyLevel() : await getRandomLevel();
     if (id) setLevelId(id);
   }
+
 
   function resetRun() {
     setRunLives(cfg.startingLives);
