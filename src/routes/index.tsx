@@ -28,12 +28,33 @@ function Home() {
             Two beautiful scenes, five tiny changes. Tap them all before your lives run out.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
-            <Link to="/play/infinite" className="rounded-full bg-primary-foreground px-5 py-2.5 text-sm font-bold text-primary shadow-soft">Play now</Link>
+            <Link to="/story" className="rounded-full bg-primary-foreground px-5 py-2.5 text-sm font-bold text-primary shadow-soft">
+              Play story
+            </Link>
+            <Link to="/play/infinite" className="rounded-full border border-primary-foreground/40 px-5 py-2.5 text-sm font-semibold">
+              Infinite
+            </Link>
             <Link to="/leaderboard" className="inline-flex items-center gap-1 rounded-full border border-primary-foreground/40 px-5 py-2.5 text-sm font-semibold">
               <Trophy className="h-4 w-4" /> Leaderboard
             </Link>
           </div>
         </section>
+
+        <Link
+          to="/story"
+          className="mt-6 flex items-center gap-4 rounded-3xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elevated"
+        >
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-fuchsia-500 text-white">
+            <MapIcon className="h-7 w-7" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Story mode</span>
+            <span className="block text-base font-black">World Map</span>
+            <span className="block truncate text-sm text-muted-foreground">4 worlds · handcrafted campaign</span>
+          </span>
+          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Explore</span>
+        </Link>
+
 
         <h2 className="mt-8 mb-3 px-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Game modes</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
