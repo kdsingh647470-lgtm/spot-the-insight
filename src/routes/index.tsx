@@ -4,6 +4,30 @@ import { AppHeader } from "@/components/AppHeader";
 import { AdBanner } from "@/components/AdBanner";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Spot the Difference AI — Relaxing Puzzle Game" },
+      { name: "description", content: "A calm, addictive spot-the-difference puzzle game with AI-generated levels, daily challenges, achievements, and a global leaderboard." },
+      { property: "og:title", content: "Spot the Difference AI — Relaxing Puzzle Game" },
+      { property: "og:description", content: "AI-generated levels, daily challenges, and leaderboards. Play Story, Infinite, Timed, or Relax modes." },
+      { property: "og:url", content: "https://spot-the-insight.lovable.app/" },
+    ],
+    links: [{ rel: "canonical", href: "https://spot-the-insight.lovable.app/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "Spot the Difference AI",
+          applicationCategory: "GameApplication",
+          operatingSystem: "Any",
+          url: "https://spot-the-insight.lovable.app/",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        }),
+      },
+    ],
+  }),
   component: Home,
 });
 
