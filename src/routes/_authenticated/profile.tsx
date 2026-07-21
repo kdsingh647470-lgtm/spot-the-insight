@@ -5,7 +5,7 @@ import { getMyProfile, claimDaily, setPremium } from "@/lib/profile.functions";
 import { makeMeAdmin } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Coins, Star, Sparkles, Gift, Flame, ShieldCheck, Lock } from "lucide-react";
+import { Coins, Star, Sparkles, Gift, Flame, ShieldCheck, Lock, Trophy, Zap, Target, Award, Crown, Medal } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/profile")({
