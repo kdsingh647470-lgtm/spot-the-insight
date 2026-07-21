@@ -199,6 +199,7 @@ function GameInner({
   }, [paused, showResult, cfg.timer, run.timeRemaining, onOutOfTime]);
 
   const submitMut = useMutation({ mutationFn: submitCompletion });
+  const qc = useQueryClient();
 
   function playBeep(freq: number, dur = 0.1, type: OscillatorType = "sine") {
     try {
