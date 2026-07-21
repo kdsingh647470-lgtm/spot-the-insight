@@ -86,3 +86,114 @@ function BigStat({ icon, label, value }: { icon: React.ReactNode; label: string;
     </div>
   );
 }
+
+type Achievement = {
+  id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  coin_reward: number;
+  xp_reward: number;
+  unlocked: boolean;
+  unlocked_at: string | null;
+};
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  trophy: Trophy, star: Star, zap: Zap, flame: Flame, target: Target,
+  award: Award, crown: Crown, medal: Medal, sparkles: Sparkles, coins: Coins,
+};
+
+function AchievementsSection({ achievements }: { achievements: Achievement[] }) {
+  const sorted = [...achievements].sort((a, b) => {
+    if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+    if (a.unlocked && b.unlocked) {
+      return (b.unlocked_at ?? "").localeCompare(a.unlocked_at ?? "");
+    }
+    return a.title.localeCompare(b.title);
+  });
+  const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const total = achievements.length;
+  const pct = total ? Math.round((unlockedCount / total) * 100) : 0;
+
+  return (
+    <section className="rounded-3xl border border-border bg-card p-4 shadow-soft">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-warning" />
+          <h2 className="font-bold">Achievements</h2>
+        </div>
+        <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+          {unlockedCount}/{total}
+        </span>
+      </div>
+      <div className="mb-4 h-2 overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-warning to-primary transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {sorted.map((a) => {
+          const Icon = (a.icon && ICON_MAP[a.icon]) || Trophy;
+          return (
+            <div
+              key={a.id}
+              className={`relative overflow-hidden rounded-2xl border p-3 text-center transition ${
+                a.unlocked
+                  ? "border-warning/50 bg-gradient-to-br from-warning/15 to-primary/10 shadow-soft"
+                  : "border-border bg-muted/40"
+              }`}
+            >
+              <div
+                className={`mx-auto grid h-12 w-12 place-items-center rounded-full ${
+                  a.unlocked
+                    ? "bg-gradient-to-br from-warning to-primary text-primary-foreground shadow-elevated"
+                    : "bg-background"
+                }`}
+              >
+                {a.unlocked ? (
+                  <Icon className="h-6 w-6" />
+                ) : (
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+              <p
+                className={`mt-2 truncate text-xs font-bold ${
+                  a.unlocked ? "" : "text-muted-foreground"
+                }`}
+              >
+                {a.title}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-[10px] leading-tight text-muted-foreground">
+                {a.description}
+              </p>
+              <div className="mt-1.5 flex items-center justify-center gap-1.5 text-[10px] font-semibold">
+                {a.coin_reward > 0 && (
+                  <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/20 px-1.5 py-0.5 text-warning">
+                    <Coins className="h-2.5 w-2.5" />{a.coin_reward}
+                  </span>
+                )}
+                {a.xp_reward > 0 && (
+                  <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5 text-primary">
+                    <Sparkles className="h-2.5 w-2.5" />{a.xp_reward}
+                  </span>
+                )}
+              </div>
+              {a.unlocked && a.unlocked_at && (
+                <p className="mt-1 text-[9px] text-muted-foreground">
+                  {new Date(a.unlocked_at).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          );
+        })}
+        {sorted.length === 0 && (
+          <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
+            No achievements yet — play a level to start unlocking!
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
