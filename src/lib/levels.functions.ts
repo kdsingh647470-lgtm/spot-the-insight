@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createPublicBackendClient, rewardForStreak, signLevelImages, todayUtc, yesterdayUtc } from "./levels.server";
+import { createPublicBackendClient, evaluateAchievements, rewardForStreak, signLevelImages, todayUtc, yesterdayUtc } from "./levels.server";
 
 export const listLevels = createServerFn({ method: "GET" }).handler(async () => {
   const sb = createPublicBackendClient();
@@ -165,7 +165,10 @@ export const submitCompletion = createServerFn({ method: "POST" })
     const newXp = (prof?.xp ?? 0) + xpEarned;
     const newLevel = Math.max(1, Math.floor(newXp / 200) + 1);
     await context.supabase.from("profiles").update({ coins: newCoins, xp: newXp, level: newLevel }).eq("id", context.userId);
-    return { stars, coinsEarned, xpEarned, totalCoins: newCoins, totalXp: newXp, level: newLevel };
+    const unlocked = await evaluateAchievements(context.supabase, context.userId, {
+      lastCompletion: { time_ms: data.time_ms, hints_used: data.hints_used, mistakes: data.mistakes, mode: data.mode },
+    });
+    return { stars, coinsEarned, xpEarned, totalCoins: newCoins, totalXp: newXp, level: newLevel, unlocked };
   });
 
 export const spendHint = createServerFn({ method: "POST" })
@@ -228,7 +231,8 @@ export const claimDailyReward = createServerFn({ method: "POST" })
     const newXp = (prof?.xp ?? 0) + xp;
     const newLevel = Math.max(1, Math.floor(newXp / 200) + 1);
     await context.supabase.from("profiles").update({ coins: newCoins, xp: newXp, level: newLevel }).eq("id", context.userId);
-    return { coins, xp, streak: nextStreak, totalCoins: newCoins, totalXp: newXp, level: newLevel };
+    const unlocked = await evaluateAchievements(context.supabase, context.userId, { streak: nextStreak });
+    return { coins, xp, streak: nextStreak, totalCoins: newCoins, totalXp: newXp, level: newLevel, unlocked };
   });
 
 

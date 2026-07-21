@@ -199,6 +199,7 @@ function GameInner({
   }, [paused, showResult, cfg.timer, run.timeRemaining, onOutOfTime]);
 
   const submitMut = useMutation({ mutationFn: submitCompletion });
+  const qc = useQueryClient();
 
   function playBeep(freq: number, dur = 0.1, type: OscillatorType = "sine") {
     try {
@@ -269,6 +270,14 @@ function GameInner({
             try {
               const r = await submitMut.mutateAsync({ data: { level_id: data.id, time_ms: (Date.now() - startRef.current), hints_used: hints, mistakes, mode: mode === "story" ? "story" : mode } });
               setLevelScore((s) => s + r.coinsEarned);
+              if (r.unlocked?.length) {
+                r.unlocked.forEach((a, i) => {
+                  setTimeout(() => {
+                    toast.success(`🏆 ${a.title}`, { description: `${a.description ?? ""}  +${a.coin_reward} coins · +${a.xp_reward} XP` });
+                  }, 400 + i * 600);
+                });
+                qc.invalidateQueries({ queryKey: ["me"] });
+              }
             } catch {}
           }
         })();
@@ -468,9 +477,15 @@ function DailyDone({ timeMs, stars, date, onHome }: { timeMs: number; stars: num
     onSuccess: (r) => {
       setClaimAnim(true);
       toast.success(`+${r.coins} coins · +${r.xp} XP · ${r.streak}-day streak!`);
+      r.unlocked?.forEach((a, i) => {
+        setTimeout(() => {
+          toast.success(`🏆 ${a.title}`, { description: `${a.description ?? ""}  +${a.coin_reward} coins · +${a.xp_reward} XP` });
+        }, 700 + i * 600);
+      });
       setTimeout(() => {
         qc.invalidateQueries({ queryKey: ["daily-reward"] });
         qc.invalidateQueries({ queryKey: ["profile"] });
+        qc.invalidateQueries({ queryKey: ["me"] });
       }, 1200);
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not claim reward"),
