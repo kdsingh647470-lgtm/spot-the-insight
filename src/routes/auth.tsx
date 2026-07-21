@@ -9,6 +9,17 @@ import { toast } from "sonner";
 import { Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
+  head: () => ({
+    meta: [
+      { title: "Sign in — Spot the Difference AI" },
+      { name: "description", content: "Sign in or create a free account to save progress, unlock achievements, and appear on the leaderboard." },
+      { property: "og:title", content: "Sign in — Spot the Difference AI" },
+      { property: "og:description", content: "Create a free account to save progress and compete on the leaderboard." },
+      { property: "og:url", content: "/auth" },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://spot-the-insight.lovable.app/auth" }],
+  }),
   component: AuthPage,
 });
 

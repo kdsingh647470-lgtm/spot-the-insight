@@ -1,0 +1,19 @@
+# Spot the Difference AI
+
+> A relaxing, mobile-first spot-the-difference puzzle game with AI-generated levels, daily challenges, achievements, and a global leaderboard.
+
+Spot the Difference AI is a Progressive Web App puzzle game. Each level pairs two nearly-identical scenes with five hidden differences. Play a story campaign across four themed worlds, chase a daily challenge for streak rewards, or pick Infinite, Timed, or Relax modes. Progress, coins, XP, and achievements are saved to your account.
+
+## Pages
+
+- [Home](/): Game overview and mode picker.
+- [Story Map](/story): Four themed worlds with hand-crafted levels.
+- [Daily Challenge](/play/daily): One new puzzle per day with streak rewards.
+- [Infinite Levels](/play/infinite): Endless random levels.
+- [Timed Mode](/play/timed): Beat the 90-second clock.
+- [Relax Mode](/play/relax): No timer, unlimited hints.
+- [Leaderboard](/leaderboard): Top players by XP and level.
+
+## Optional
+
+- [Sign in](/auth): Create a free account to save progress.

@@ -335,6 +335,7 @@ function GameInner({
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
+      <h1 className="sr-only">Spot the Difference — {cfg.label}{data?.title ? `: ${data.title}` : ""}</h1>
       {/* HUD */}
       <div className="flex items-center justify-between gap-2 border-b border-border bg-background/80 px-3 py-2 backdrop-blur">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/" })} aria-label="Home"><Home className="h-5 w-5" /></Button>
@@ -644,7 +645,7 @@ function GameImage({
       data-shake={!!wrong}
       style={{ aspectRatio: "4/3" }}
     >
-      <img src={src} alt="scene" className="pointer-events-none absolute inset-0 h-full w-full object-cover" draggable={false} />
+      <img src={src} alt="Spot the difference puzzle scene" className="pointer-events-none absolute inset-0 h-full w-full object-cover" draggable={false} />
       {found.map((f) => (
         <span key={f.id} className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-success bg-success/20" style={{ left: `${f.x * 100}%`, top: `${f.y * 100}%`, width: "12%", aspectRatio: "1" }} />
       ))}

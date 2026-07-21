@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://spot-the-insight.lovable.app/sitemap.xml
