@@ -5,6 +5,16 @@ import { AppHeader } from "@/components/AppHeader";
 import { getLeaderboard } from "@/lib/levels.functions";
 
 export const Route = createFileRoute("/leaderboard")({
+  head: () => ({
+    meta: [
+      { title: "Leaderboard — Spot the Difference AI" },
+      { name: "description", content: "See the top spot-the-difference players ranked by XP, level, and puzzles cleared. Climb the global leaderboard today." },
+      { property: "og:title", content: "Leaderboard — Spot the Difference AI" },
+      { property: "og:description", content: "Top players ranked by XP and level. Compete in daily challenges to climb the ranks." },
+      { property: "og:url", content: "/leaderboard" },
+    ],
+    links: [{ rel: "canonical", href: "https://spot-the-insight.lovable.app/leaderboard" }],
+  }),
   component: Leaderboard,
 });
 

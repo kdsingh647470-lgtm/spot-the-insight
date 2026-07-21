@@ -1,10 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const BASE_URL = "";
+const BASE_URL = "https://spot-the-insight.lovable.app";
 const entries = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
+  { path: "/story", changefreq: "weekly", priority: "0.9" },
+  { path: "/play/daily", changefreq: "daily", priority: "0.9" },
+  { path: "/play/infinite", changefreq: "weekly", priority: "0.7" },
+  { path: "/play/timed", changefreq: "weekly", priority: "0.7" },
+  { path: "/play/relax", changefreq: "weekly", priority: "0.7" },
   { path: "/leaderboard", changefreq: "daily", priority: "0.8" },
-  { path: "/auth", changefreq: "monthly", priority: "0.5" },
+  { path: "/auth", changefreq: "monthly", priority: "0.3" },
 ];
 
 export const Route = createFileRoute("/sitemap.xml")({

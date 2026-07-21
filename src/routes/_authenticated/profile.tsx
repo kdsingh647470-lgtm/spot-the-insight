@@ -62,7 +62,7 @@ function Profile() {
               <h2 className="font-bold">Premium (placeholder)</h2>
               <p className="text-sm text-muted-foreground">Remove ads and unlock cosmetics.</p>
             </div>
-            <Switch checked={profile?.is_premium ?? false} onCheckedChange={(v) => prem.mutate(v)} />
+            <Switch aria-label="Toggle premium" checked={profile?.is_premium ?? false} onCheckedChange={(v) => prem.mutate(v)} />
           </div>
         </section>
 
