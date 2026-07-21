@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createPublicBackendClient, rewardForStreak, signLevelImages, todayUtc, yesterdayUtc } from "./levels.server";
+import { createPublicBackendClient, evaluateAchievements, rewardForStreak, signLevelImages, todayUtc, yesterdayUtc } from "./levels.server";
 
 export const listLevels = createServerFn({ method: "GET" }).handler(async () => {
   const sb = createPublicBackendClient();
