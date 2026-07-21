@@ -335,6 +335,7 @@ function GameInner({
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
+      <h1 className="sr-only">Spot the Difference — {cfg.label}{data?.title ? `: ${data.title}` : ""}</h1>
       {/* HUD */}
       <div className="flex items-center justify-between gap-2 border-b border-border bg-background/80 px-3 py-2 backdrop-blur">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/" })} aria-label="Home"><Home className="h-5 w-5" /></Button>
