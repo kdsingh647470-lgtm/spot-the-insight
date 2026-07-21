@@ -269,6 +269,14 @@ function GameInner({
             try {
               const r = await submitMut.mutateAsync({ data: { level_id: data.id, time_ms: (Date.now() - startRef.current), hints_used: hints, mistakes, mode: mode === "story" ? "story" : mode } });
               setLevelScore((s) => s + r.coinsEarned);
+              if (r.unlocked?.length) {
+                r.unlocked.forEach((a, i) => {
+                  setTimeout(() => {
+                    toast.success(`🏆 ${a.title}`, { description: `${a.description ?? ""}  +${a.coin_reward} coins · +${a.xp_reward} XP` });
+                  }, 400 + i * 600);
+                });
+                qc.invalidateQueries({ queryKey: ["me"] });
+              }
             } catch {}
           }
         })();
