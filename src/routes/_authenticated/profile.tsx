@@ -53,20 +53,8 @@ function Profile() {
           <Button className="mt-3" onClick={() => claim.mutate()} disabled={claim.isPending}><Flame className="mr-1 h-4 w-4" /> Claim today's reward</Button>
         </section>
 
-        <section className="rounded-3xl border border-border bg-card p-4 shadow-soft">
-          <h2 className="mb-3 font-bold">Achievements</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {achievements.map((a) => (
-              <div key={a.id} className={`rounded-2xl border p-3 text-center ${a.unlocked ? "border-warning/50 bg-warning/10" : "border-border bg-muted/40 opacity-60"}`}>
-                <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-background">
-                  {a.unlocked ? <Star className="h-5 w-5 text-warning" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
-                </div>
-                <p className="mt-1 truncate text-xs font-bold">{a.title}</p>
-                <p className="truncate text-[10px] text-muted-foreground">{a.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        <AchievementsSection achievements={achievements} />
+
 
         <section className="rounded-3xl border border-border bg-card p-4 shadow-soft">
           <div className="flex items-center justify-between">
