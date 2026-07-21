@@ -13,7 +13,10 @@ export const getMyProfile = createServerFn({ method: "GET" })
     return {
       profile,
       completions: completions ?? [],
-      achievements: (all ?? []).map((a) => ({ ...a, unlocked: unlocked?.some((u) => u.achievement_id === a.id) ?? false })),
+      achievements: (all ?? []).map((a) => {
+        const u = unlocked?.find((x) => x.achievement_id === a.id);
+        return { ...a, unlocked: !!u, unlocked_at: u?.unlocked_at ?? null };
+      }),
       isAdmin: !!roles?.some((r) => r.role === "admin"),
     };
   });
