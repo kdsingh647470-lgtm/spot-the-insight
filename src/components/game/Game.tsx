@@ -477,9 +477,15 @@ function DailyDone({ timeMs, stars, date, onHome }: { timeMs: number; stars: num
     onSuccess: (r) => {
       setClaimAnim(true);
       toast.success(`+${r.coins} coins · +${r.xp} XP · ${r.streak}-day streak!`);
+      r.unlocked?.forEach((a, i) => {
+        setTimeout(() => {
+          toast.success(`🏆 ${a.title}`, { description: `${a.description ?? ""}  +${a.coin_reward} coins · +${a.xp_reward} XP` });
+        }, 700 + i * 600);
+      });
       setTimeout(() => {
         qc.invalidateQueries({ queryKey: ["daily-reward"] });
         qc.invalidateQueries({ queryKey: ["profile"] });
+        qc.invalidateQueries({ queryKey: ["me"] });
       }, 1200);
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not claim reward"),
