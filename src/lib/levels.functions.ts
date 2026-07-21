@@ -231,7 +231,8 @@ export const claimDailyReward = createServerFn({ method: "POST" })
     const newXp = (prof?.xp ?? 0) + xp;
     const newLevel = Math.max(1, Math.floor(newXp / 200) + 1);
     await context.supabase.from("profiles").update({ coins: newCoins, xp: newXp, level: newLevel }).eq("id", context.userId);
-    return { coins, xp, streak: nextStreak, totalCoins: newCoins, totalXp: newXp, level: newLevel };
+    const unlocked = await evaluateAchievements(context.supabase, context.userId, { streak: nextStreak });
+    return { coins, xp, streak: nextStreak, totalCoins: newCoins, totalXp: newXp, level: newLevel, unlocked };
   });
 
 
