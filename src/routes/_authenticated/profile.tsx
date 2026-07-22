@@ -90,6 +90,93 @@ function BigStat({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
+type Stats = {
+  totalPlays: number;
+  uniqueLevels: number;
+  totalStars: number;
+  perfect: number;
+  accuracy: number;
+  avgTimeMs: number;
+  bestTimeMs: number;
+  totalHints: number;
+  totalMistakes: number;
+  currentStreak: number;
+  lastClaimDate: string | null;
+  byWorld: Record<number, number>;
+  byMode: Record<string, number>;
+};
+
+const WORLD_NAMES: Record<number, string> = { 1: "Cozy Home", 2: "Nature Escape", 3: "Adventure Quest", 4: "Future World" };
+const MODE_NAMES: Record<string, string> = { story: "Story", daily: "Daily", infinite: "Infinite", timed: "Timed", relax: "Relax" };
+
+function fmtTime(ms: number) {
+  if (!ms) return "—";
+  const s = Math.round(ms / 100) / 10;
+  if (s < 60) return `${s.toFixed(1)}s`;
+  const m = Math.floor(s / 60);
+  return `${m}m ${Math.round(s % 60)}s`;
+}
+
+function StatsSection({ stats }: { stats: Stats }) {
+  const tiles: Array<{ icon: React.ReactNode; label: string; value: string; sub?: string }> = [
+    { icon: <Target className="h-4 w-4" />, label: "Accuracy", value: `${stats.accuracy}%`, sub: `${stats.totalMistakes} misses` },
+    { icon: <Clock className="h-4 w-4" />, label: "Avg time", value: fmtTime(stats.avgTimeMs), sub: `best ${fmtTime(stats.bestTimeMs)}` },
+    { icon: <BarChart3 className="h-4 w-4" />, label: "Levels cleared", value: `${stats.uniqueLevels}`, sub: `${stats.totalPlays} plays` },
+    { icon: <Star className="h-4 w-4" />, label: "Total stars", value: `${stats.totalStars}`, sub: `${stats.perfect} perfect` },
+    { icon: <MousePointerClick className="h-4 w-4" />, label: "Hints used", value: `${stats.totalHints}` },
+    { icon: <Flame className="h-4 w-4" />, label: "Daily streak", value: `${stats.currentStreak}d` },
+  ];
+  const worldEntries = Object.entries(stats.byWorld).sort(([a], [b]) => Number(a) - Number(b));
+  const modeEntries = Object.entries(stats.byMode).sort(([, a], [, b]) => b - a);
+
+  return (
+    <section className="rounded-3xl border border-border bg-card p-4 shadow-soft">
+      <div className="mb-3 flex items-center gap-2">
+        <TrendingUp className="h-5 w-5 text-primary" />
+        <h2 className="font-bold">Statistics</h2>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {tiles.map((t) => (
+          <div key={t.label} className="rounded-2xl border border-border/60 bg-muted/40 p-3">
+            <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {t.icon} {t.label}
+            </div>
+            <div className="mt-1 text-xl font-black tabular-nums">{t.value}</div>
+            {t.sub && <div className="text-[10px] text-muted-foreground">{t.sub}</div>}
+          </div>
+        ))}
+      </div>
+      {worldEntries.length > 0 && (
+        <div className="mt-4">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">By world</p>
+          <div className="flex flex-wrap gap-1.5">
+            {worldEntries.map(([w, n]) => (
+              <span key={w} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+                {WORLD_NAMES[Number(w)] ?? `World ${w}`} · {n}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {modeEntries.length > 0 && (
+        <div className="mt-3">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">By mode</p>
+          <div className="flex flex-wrap gap-1.5">
+            {modeEntries.map(([m, n]) => (
+              <span key={m} className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-1 text-xs font-semibold text-accent-foreground">
+                {MODE_NAMES[m] ?? m} · {n}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {stats.totalPlays === 0 && (
+        <p className="mt-3 text-center text-sm text-muted-foreground">Play a level to start tracking stats.</p>
+      )}
+    </section>
+  );
+}
+
 type Achievement = {
   id: string;
   code: string;
