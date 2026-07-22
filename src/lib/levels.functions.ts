@@ -236,16 +236,53 @@ export const claimDailyReward = createServerFn({ method: "POST" })
   });
 
 
-export const getLeaderboard = createServerFn({ method: "GET" }).handler(async () => {
-  // Read via service role so we can join profiles without opening the table to anon,
-  // and only project the columns safe to expose publicly.
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("profiles")
-    .select("id, username, avatar_url, xp, level")
-    .order("xp", { ascending: false })
-    .limit(50);
-  if (error) throw new Error(error.message);
-  return data ?? [];
-});
+export const getLeaderboard = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({
+    scope: z.enum(["global", "weekly", "monthly", "daily"]).default("global"),
+  }).parse(d ?? {}))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.scope === "global") {
+      const { data: rows, error } = await supabaseAdmin
+        .from("profiles")
+        .select("id, username, avatar_url, xp, level")
+        .order("xp", { ascending: false })
+        .limit(50);
+      if (error) throw new Error(error.message);
+      return (rows ?? []).map((r) => ({ ...r, score: r.xp, scoreLabel: "XP" }));
+    }
+    const now = Date.now();
+    let sinceIso: string;
+    if (data.scope === "daily") {
+      sinceIso = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString();
+    } else if (data.scope === "weekly") {
+      sinceIso = new Date(now - 7 * 86400000).toISOString();
+    } else {
+      sinceIso = new Date(now - 30 * 86400000).toISOString();
+    }
+    const { data: comps, error } = await supabaseAdmin
+      .from("level_completions")
+      .select("user_id, xp_earned")
+      .gte("completed_at", sinceIso);
+    if (error) throw new Error(error.message);
+    const agg = new Map<string, number>();
+    for (const c of comps ?? []) {
+      agg.set(c.user_id, (agg.get(c.user_id) ?? 0) + (c.xp_earned ?? 0));
+    }
+    const top = [...agg.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50);
+    if (top.length === 0) return [];
+    const ids = top.map(([id]) => id);
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("id, username, avatar_url, xp, level")
+      .in("id", ids);
+    const byId = new Map((profs ?? []).map((p) => [p.id, p]));
+    return top
+      .map(([id, score]) => {
+        const p = byId.get(id);
+        if (!p) return null;
+        return { ...p, score, scoreLabel: "XP" };
+      })
+      .filter((x): x is NonNullable<typeof x> => !!x);
+  });
 
