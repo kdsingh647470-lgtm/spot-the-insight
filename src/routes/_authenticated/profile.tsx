@@ -31,7 +31,7 @@ function Profile() {
   });
 
   if (q.isLoading || !q.data) return <div className="min-h-dvh bg-background"><AppHeader /><p className="p-6">Loading…</p></div>;
-  const { profile, achievements, isAdmin } = q.data;
+  const { profile, achievements, isAdmin, stats } = q.data;
 
   return (
     <div className="min-h-dvh bg-background">
@@ -53,7 +53,10 @@ function Profile() {
           <Button className="mt-3" onClick={() => claim.mutate()} disabled={claim.isPending}><Flame className="mr-1 h-4 w-4" /> Claim today's reward</Button>
         </section>
 
+        <StatsSection stats={stats} />
+
         <AchievementsSection achievements={achievements} />
+
 
 
         <section className="rounded-3xl border border-border bg-card p-4 shadow-soft">
