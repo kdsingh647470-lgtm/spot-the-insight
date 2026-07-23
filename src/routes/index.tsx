@@ -41,6 +41,7 @@ const modes = [
 
 
 function Home() {
+  const resume = useResume();
   return (
     <div className="min-h-dvh bg-background">
       <AppHeader />
