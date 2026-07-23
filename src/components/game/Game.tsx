@@ -1,14 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
-import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles, Infinity as InfinityIcon, Leaf, Calendar, Gift, Flame, Check, Settings2 } from "lucide-react";
+import { Heart, Lightbulb, Pause, Play, Timer, X, RotateCcw, Home, Star, Coins, Sparkles, Infinity as InfinityIcon, Leaf, Calendar, Gift, Flame, Check, Settings2, Volume2, VolumeX, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getLevelById, submitCompletion, spendHint, getRandomLevel, getDailyLevel, getDailyStatus, getDailyReward, claimDailyReward, getNextStoryLevel } from "@/lib/levels.functions";
 import { useGameSettings, calibrateTap } from "@/lib/game-settings";
 import { GameSettingsDialog } from "@/components/game/GameSettingsDialog";
+import { playBeep, useMuted, saveResume, clearResume } from "@/lib/audio";
+
+type Transform = { scale: number; tx: number; ty: number };
+const IDENTITY: Transform = { scale: 1, tx: 0, ty: 0 };
 
 type Mode = "story" | "daily" | "infinite" | "timed" | "relax";
 type Diff = { id: string; x: number; y: number; radius: number; label: string | null };
@@ -164,6 +168,8 @@ function GameInner({
   const [paused, setPaused] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings] = useGameSettings();
+  const [muted, setMutedState] = useMuted();
+  const [transform, setTransform] = useState<Transform>(IDENTITY);
   const [elapsed, setElapsed] = useState(0);              // seconds since level start
   const [timeLeft, setTimeLeft] = useState(run.timeRemaining); // seconds remaining (timed)
   const [wrong, setWrong] = useState<{ x: number; y: number; k: number } | null>(null);
@@ -178,6 +184,8 @@ function GameInner({
   const startRef = useRef(Date.now());
 
   useEffect(() => { supabase.auth.getSession().then(({ data }) => setSession(data.session)); }, []);
+  useEffect(() => { setTransform(IDENTITY); }, [data.id]);
+  useEffect(() => { saveResume({ mode, levelId: data.id, title: data.title, savedAt: Date.now() }); }, [mode, data.id, data.title]);
 
   // Timer tick
   useEffect(() => {
@@ -201,17 +209,6 @@ function GameInner({
   const submitMut = useMutation({ mutationFn: submitCompletion });
   const qc = useQueryClient();
 
-  function playBeep(freq: number, dur = 0.1, type: OscillatorType = "sine") {
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator(); const gain = ctx.createGain();
-      osc.type = type; osc.frequency.value = freq;
-      osc.connect(gain); gain.connect(ctx.destination);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-      osc.start(); osc.stop(ctx.currentTime + dur);
-    } catch {}
-  }
 
   function handleTap(rawX: number, rawY: number, containerWidth: number) {
     if (paused || showResult) return;
@@ -362,14 +359,18 @@ function GameInner({
         <div className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
           <Sparkles className="h-4 w-4" /> {found.length}/{totalDiffs}
         </div>
+        {transform.scale > 1.01 && (
+          <Button variant="ghost" size="icon" onClick={() => setTransform(IDENTITY)} aria-label="Reset zoom"><ZoomIn className="h-5 w-5" /></Button>
+        )}
+        <Button variant="ghost" size="icon" onClick={() => setMutedState(!muted)} aria-label={muted ? "Unmute" : "Mute"}>{muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</Button>
         <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} aria-label="Tap accuracy"><Settings2 className="h-5 w-5" /></Button>
         <Button variant="ghost" size="icon" onClick={() => setPaused(true)} aria-label="Pause"><Pause className="h-5 w-5" /></Button>
         <GameSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
 
       <div className="relative flex flex-1 flex-col gap-3 p-3 md:flex-row md:items-stretch">
-        <GameImage src={data.image_a_url} onTap={handleTap} found={found} wrong={wrong} hint={hintTarget} shakeKey={shakeKey} />
-        <GameImage src={data.image_b_url} onTap={handleTap} found={found} wrong={wrong} hint={hintTarget} shakeKey={shakeKey} />
+        <GameImage src={data.image_a_url} onTap={handleTap} found={found} wrong={wrong} hint={hintTarget} shakeKey={shakeKey} transform={transform} onTransform={setTransform} />
+        <GameImage src={data.image_b_url} onTap={handleTap} found={found} wrong={wrong} hint={hintTarget} shakeKey={shakeKey} transform={transform} onTransform={setTransform} />
         <AnimatePresence>
           {comboPop && comboPop.n >= 2 && (
             <motion.div
@@ -622,7 +623,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function GameImage({
-  src, onTap, found, wrong, hint, shakeKey,
+  src, onTap, found, wrong, hint, shakeKey, transform, onTransform,
 }: {
   src: string;
   onTap: (x: number, y: number, containerWidth: number) => void;
@@ -630,34 +631,134 @@ function GameImage({
   wrong: { x: number; y: number; k: number } | null;
   hint: Diff | null;
   shakeKey: number;
+  transform: Transform;
+  onTransform: (t: Transform | ((prev: Transform) => Transform)) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  function onClick(e: React.PointerEvent) {
+  const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const gestureRef = useRef<null | {
+    startDist: number;
+    startMid: { x: number; y: number };
+    startTransform: Transform;
+    moved: boolean;
+    startPos: { x: number; y: number };
+  }>(null);
+
+  const clampT = useCallback((t: Transform): Transform => {
+    const scale = Math.min(4, Math.max(1, t.scale));
+    // Keep image inside container
+    const maxPan = (scale - 1) / 2;
+    return {
+      scale,
+      tx: Math.min(maxPan, Math.max(-maxPan, t.tx)),
+      ty: Math.min(maxPan, Math.max(-maxPan, t.ty)),
+    };
+  }, []);
+
+  function localPoint(e: React.PointerEvent) {
     const rect = ref.current!.getBoundingClientRect();
-    onTap((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height, rect.width);
+    return { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height, w: rect.width };
   }
+
+  function onPointerDown(e: React.PointerEvent) {
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    const p = localPoint(e);
+    pointers.current.set(e.pointerId, { x: p.x, y: p.y });
+    if (pointers.current.size === 1) {
+      gestureRef.current = { startDist: 0, startMid: { x: p.x, y: p.y }, startTransform: transform, moved: false, startPos: { x: p.x, y: p.y } };
+    } else if (pointers.current.size === 2) {
+      const pts = [...pointers.current.values()];
+      const dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+      gestureRef.current = {
+        startDist: Math.hypot(dx, dy),
+        startMid: { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 },
+        startTransform: transform,
+        moved: true,
+        startPos: { x: p.x, y: p.y },
+      };
+    }
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!pointers.current.has(e.pointerId)) return;
+    const p = localPoint(e);
+    pointers.current.set(e.pointerId, { x: p.x, y: p.y });
+    const g = gestureRef.current;
+    if (!g) return;
+    if (pointers.current.size >= 2) {
+      const pts = [...pointers.current.values()];
+      const dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+      const dist = Math.hypot(dx, dy);
+      const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+      const s0 = g.startTransform.scale;
+      const s1 = Math.min(4, Math.max(1, s0 * (dist / (g.startDist || dist))));
+      // Anchor zoom around the initial midpoint (in image space).
+      const ax = (g.startMid.x - g.startTransform.tx) / s0;
+      const ay = (g.startMid.y - g.startTransform.ty) / s0;
+      const tx = mid.x - s1 * ax;
+      const ty = mid.y - s1 * ay;
+      onTransform(clampT({ scale: s1, tx, ty }));
+    } else if (pointers.current.size === 1 && transform.scale > 1.01) {
+      const dx = p.x - g.startMid.x;
+      const dy = p.y - g.startMid.y;
+      if (Math.hypot(dx, dy) > 0.01) g.moved = true;
+      onTransform(clampT({ scale: g.startTransform.scale, tx: g.startTransform.tx + dx, ty: g.startTransform.ty + dy }));
+    } else if (pointers.current.size === 1) {
+      const dx = p.x - g.startPos.x;
+      const dy = p.y - g.startPos.y;
+      if (Math.hypot(dx, dy) > 0.02) g.moved = true;
+    }
+  }
+
+  function onPointerUp(e: React.PointerEvent) {
+    const wasSingle = pointers.current.size === 1;
+    const g = gestureRef.current;
+    pointers.current.delete(e.pointerId);
+    if (wasSingle && g && !g.moved) {
+      const p = localPoint(e);
+      // Invert current transform to image-space normalized coords
+      const s = transform.scale;
+      const ix = (p.x - transform.tx) / s;
+      const iy = (p.y - transform.ty) / s;
+      onTap(ix, iy, p.w * s);
+    }
+    if (pointers.current.size === 0) gestureRef.current = null;
+  }
+
+  const style: React.CSSProperties = {
+    transform: `translate(${transform.tx * 100}%, ${transform.ty * 100}%) scale(${transform.scale})`,
+    transformOrigin: "0 0",
+    transition: pointers.current.size ? "none" : "transform 120ms ease-out",
+  };
+
   return (
     <div
       key={shakeKey}
       ref={ref}
-      onPointerDown={onClick}
-      className="relative flex-1 select-none overflow-hidden rounded-3xl border border-border bg-muted shadow-soft data-[shake=true]:animate-shake"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      className="relative flex-1 touch-none select-none overflow-hidden rounded-3xl border border-border bg-muted shadow-soft data-[shake=true]:animate-shake"
       data-shake={!!wrong}
       style={{ aspectRatio: "4/3" }}
     >
-      <img src={src} alt="Spot the difference puzzle scene" className="pointer-events-none absolute inset-0 h-full w-full object-cover" draggable={false} />
-      {found.map((f) => (
-        <span key={f.id} className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-success bg-success/20" style={{ left: `${f.x * 100}%`, top: `${f.y * 100}%`, width: "12%", aspectRatio: "1" }} />
-      ))}
-      {hint && (
-        <span className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-warning animate-ping-ring" style={{ left: `${hint.x * 100}%`, top: `${hint.y * 100}%`, width: "16%", aspectRatio: "1" }} />
-      )}
-      {wrong && (
-        <span key={wrong.k} className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-destructive animate-ping-ring" style={{ left: `${wrong.x * 100}%`, top: `${wrong.y * 100}%`, width: "12%", aspectRatio: "1" }} />
-      )}
+      <div className="absolute inset-0" style={style}>
+        <img src={src} alt="Spot the difference puzzle scene" className="pointer-events-none absolute inset-0 h-full w-full object-cover" draggable={false} />
+        {found.map((f) => (
+          <span key={f.id} className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-success bg-success/20" style={{ left: `${f.x * 100}%`, top: `${f.y * 100}%`, width: "12%", aspectRatio: "1" }} />
+        ))}
+        {hint && (
+          <span className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-warning animate-ping-ring" style={{ left: `${hint.x * 100}%`, top: `${hint.y * 100}%`, width: "16%", aspectRatio: "1" }} />
+        )}
+        {wrong && (
+          <span key={wrong.k} className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-destructive animate-ping-ring" style={{ left: `${wrong.x * 100}%`, top: `${wrong.y * 100}%`, width: "12%", aspectRatio: "1" }} />
+        )}
+      </div>
     </div>
   );
 }
+
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60); const r = s % 60;

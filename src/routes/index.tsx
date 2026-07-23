@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Sparkles, Calendar, Infinity as InfIcon, Timer, Leaf, Trophy, Map as MapIcon } from "lucide-react";
+import { Sparkles, Calendar, Infinity as InfIcon, Timer, Leaf, Trophy, Map as MapIcon, Play, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { AdBanner } from "@/components/AdBanner";
+import { useResume, clearResume } from "@/lib/audio";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,6 +41,7 @@ const modes = [
 
 
 function Home() {
+  const resume = useResume();
   return (
     <div className="min-h-dvh bg-background">
       <AppHeader />
@@ -63,6 +65,35 @@ function Home() {
             </Link>
           </div>
         </section>
+
+        {resume && resume.levelId && (
+          <div className="relative mt-6 flex items-center gap-4 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 to-accent/10 p-4 shadow-soft">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-elevated">
+              <Play className="h-7 w-7 fill-current" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Continue playing</p>
+              <p className="truncate text-base font-black">{resume.title ?? "Last level"}</p>
+              <p className="truncate text-xs text-muted-foreground capitalize">{resume.mode} mode</p>
+            </div>
+            <Link
+              to="/play/$mode/$levelId"
+              params={{ mode: resume.mode, levelId: resume.levelId }}
+              className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-soft"
+            >
+              Resume
+            </Link>
+            <button
+              type="button"
+              onClick={() => clearResume()}
+              aria-label="Dismiss"
+              className="absolute right-2 top-2 rounded-full p-1 text-muted-foreground hover:bg-background/60"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
 
         <Link
           to="/story"
