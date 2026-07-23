@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Sparkles, Calendar, Infinity as InfIcon, Timer, Leaf, Trophy, Map as MapIcon } from "lucide-react";
+import { Sparkles, Calendar, Infinity as InfIcon, Timer, Leaf, Trophy, Map as MapIcon, Play, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { AdBanner } from "@/components/AdBanner";
+import { useResume, clearResume } from "@/lib/audio";
 
 export const Route = createFileRoute("/")({
   head: () => ({
