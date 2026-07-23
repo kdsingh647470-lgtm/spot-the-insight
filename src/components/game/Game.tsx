@@ -209,17 +209,6 @@ function GameInner({
   const submitMut = useMutation({ mutationFn: submitCompletion });
   const qc = useQueryClient();
 
-  function playBeep(freq: number, dur = 0.1, type: OscillatorType = "sine") {
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator(); const gain = ctx.createGain();
-      osc.type = type; osc.frequency.value = freq;
-      osc.connect(gain); gain.connect(ctx.destination);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-      osc.start(); osc.stop(ctx.currentTime + dur);
-    } catch {}
-  }
 
   function handleTap(rawX: number, rawY: number, containerWidth: number) {
     if (paused || showResult) return;
