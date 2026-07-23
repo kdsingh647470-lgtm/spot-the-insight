@@ -168,6 +168,8 @@ function GameInner({
   const [paused, setPaused] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings] = useGameSettings();
+  const [muted, setMutedState] = useMuted();
+  const [transform, setTransform] = useState<Transform>(IDENTITY);
   const [elapsed, setElapsed] = useState(0);              // seconds since level start
   const [timeLeft, setTimeLeft] = useState(run.timeRemaining); // seconds remaining (timed)
   const [wrong, setWrong] = useState<{ x: number; y: number; k: number } | null>(null);
@@ -182,6 +184,8 @@ function GameInner({
   const startRef = useRef(Date.now());
 
   useEffect(() => { supabase.auth.getSession().then(({ data }) => setSession(data.session)); }, []);
+  useEffect(() => { setTransform(IDENTITY); }, [data.id]);
+  useEffect(() => { saveResume({ mode, levelId: data.id, title: data.title, savedAt: Date.now() }); }, [mode, data.id, data.title]);
 
   // Timer tick
   useEffect(() => {
