@@ -14,9 +14,9 @@ export type GameSettings = {
 };
 
 export const DEFAULT_SETTINGS: GameSettings = {
-  minRadius: 0.04,
-  bufferPct: 0.015,
-  bufferPx: 8,
+  minRadius: 0.03,
+  bufferPct: 0.005,
+  bufferPx: 4,
   offsetX: 0,
   offsetY: 0,
   scale: 1,
