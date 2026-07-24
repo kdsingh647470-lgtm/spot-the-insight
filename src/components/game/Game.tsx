@@ -222,10 +222,10 @@ function GameInner({
     const ASPECT = 4 / 3; // width / height
     const pxBufferNorm = containerWidth > 0 ? settings.bufferPx / containerWidth : 0;
     // Pick the CLOSEST unfound difference within tolerance. Tolerance is
-    // deliberately conservative: the tap must fall inside the difference's
-    // OWN radius (or a small floor for tiny/unset radii), plus a buffer
-    // CAPPED relative to that radius. A generous buffer can never let a
-    // tap on an unrelated nearby shape count as a hit.
+    // anchored to the VISIBLE marker radius (~6% of image width) so a tap
+    // clearly outside the highlighted circle can never register as correct,
+    // regardless of what radius the level author saved.
+    const MARKER_RADIUS = 0.06; // matches the 12%-width found/wrong circle
     let hit: Diff | undefined;
     let bestDist = Infinity;
     for (const d of data.differences) {
@@ -233,18 +233,21 @@ function GameInner({
       const dx = d.x - px;
       const dy = (d.y - py) / ASPECT;
       const dist = Math.hypot(dx, dy);
-      const authoredRadius = d.radius > 0 ? d.radius : 0;
-      const effectiveRadius = Math.max(authoredRadius, settings.minRadius);
+      const authored = d.radius > 0 ? d.radius : settings.minRadius;
+      // Clamp authored radius into [minRadius, MARKER_RADIUS] so oversized
+      // authored regions can't create huge invisible hit zones.
+      const effectiveRadius = Math.min(Math.max(authored, settings.minRadius), MARKER_RADIUS);
       const rawBuffer = settings.bufferPct + pxBufferNorm;
-      // Cap buffer at 35% of the effective radius so tolerance stays
-      // anchored inside the real difference region.
-      const buffer = Math.min(rawBuffer, effectiveRadius * 0.35);
+      // Cap buffer at 20% of the effective radius so tolerance stays tight
+      // and always lands inside the highlighted marker.
+      const buffer = Math.min(rawBuffer, effectiveRadius * 0.2);
       const tolerance = effectiveRadius + buffer;
       if (dist <= tolerance && dist < bestDist) {
         bestDist = dist;
         hit = d;
       }
     }
+
     if (hit) {
       playBeep(880, 0.12, "triangle");
       const nf = [...found, { id: hit.id, x: hit.x, y: hit.y }];
