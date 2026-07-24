@@ -215,66 +215,63 @@ type SurfaceProps = {
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 };
 
-const ImageSurface = Object.assign(
-  function ImageSurfaceImpl(
-    { src, alt, diffs, selected, onSelect, showOverlay, showHitArea, showGrid, toleranceFor, interactive, onClick }: SurfaceProps,
-    ref?: React.Ref<HTMLDivElement>,
-  ) {
-    return (
-      <div
-        ref={ref}
-        className="relative select-none overflow-hidden rounded-3xl border border-border bg-muted"
-        style={{ aspectRatio: "4/3", cursor: interactive ? "crosshair" : "default" }}
-        onClick={interactive ? onClick : undefined}
-      >
-        <img src={src} className="pointer-events-none absolute inset-0 h-full w-full object-cover" alt={alt} />
-        {showGrid && (
-          <div
-            className="pointer-events-none absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, hsl(var(--foreground) / 0.4) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--foreground) / 0.4) 1px, transparent 1px)",
-              backgroundSize: "10% 10%",
-            }}
-          />
-        )}
-        {showOverlay &&
-          diffs.map((d, i) => {
-            const isSel = i === selected;
-            const { tolerance } = toleranceFor(d.radius);
-            const markerSize = d.radius * 2 * 100;
-            const hitSize = tolerance * 2 * 100;
-            return (
-              <div key={i}>
-                {showHitArea && (
-                  <span
-                    className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-dashed border-primary/70"
-                    style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%`, width: `${hitSize}%`, aspectRatio: "1" }}
-                  />
-                )}
+const ImageSurface = forwardRef<HTMLDivElement, SurfaceProps>(function ImageSurface(
+  { src, alt, diffs, selected, onSelect, showOverlay, showHitArea, showGrid, toleranceFor, interactive, onClick },
+  ref,
+) {
+  return (
+    <div
+      ref={ref}
+      className="relative select-none overflow-hidden rounded-3xl border border-border bg-muted"
+      style={{ aspectRatio: "4/3", cursor: interactive ? "crosshair" : "default" }}
+      onClick={interactive ? onClick : undefined}
+    >
+      <img src={src} className="pointer-events-none absolute inset-0 h-full w-full object-cover" alt={alt} />
+      {showGrid && (
+        <div
+          className="pointer-events-none absolute inset-0 opacity-30"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, hsl(var(--foreground) / 0.4) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--foreground) / 0.4) 1px, transparent 1px)",
+            backgroundSize: "10% 10%",
+          }}
+        />
+      )}
+      {showOverlay &&
+        diffs.map((d, i) => {
+          const isSel = i === selected;
+          const { tolerance } = toleranceFor(d.radius);
+          const markerSize = d.radius * 2 * 100;
+          const hitSize = tolerance * 2 * 100;
+          return (
+            <div key={i}>
+              {showHitArea && (
                 <span
-                  onClick={(e) => { e.stopPropagation(); onSelect(isSel ? null : i); }}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border-4 transition-all ${
-                    isSel
-                      ? "border-success bg-success/40 shadow-lg ring-2 ring-success/50"
-                      : "border-warning bg-warning/30 hover:bg-warning/50"
-                  }`}
-                  style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%`, width: `${markerSize}%`, aspectRatio: "1" }}
+                  className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-dashed border-primary/70"
+                  style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%`, width: `${hitSize}%`, aspectRatio: "1" }}
                 />
-                <span
-                  className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground px-1.5 py-0.5 text-[10px] font-black leading-none text-background shadow"
-                  style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%` }}
-                >
-                  {i + 1}
-                </span>
-              </div>
-            );
-          })}
-      </div>
-    );
-  },
-  { displayName: "ImageSurface" },
-);
+              )}
+              <span
+                onClick={(e) => { e.stopPropagation(); onSelect(isSel ? null : i); }}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border-4 transition-all ${
+                  isSel
+                    ? "border-success bg-success/40 shadow-lg ring-2 ring-success/50"
+                    : "border-warning bg-warning/30 hover:bg-warning/50"
+                }`}
+                style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%`, width: `${markerSize}%`, aspectRatio: "1" }}
+              />
+              <span
+                className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground px-1.5 py-0.5 text-[10px] font-black leading-none text-background shadow"
+                style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%` }}
+              >
+                {i + 1}
+              </span>
+            </div>
+          );
+        })}
+    </div>
+  );
+});
 
-// forwardRef wrapper (kept simple; only surface A needs the ref)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _ImageSurface = ImageSurface;
