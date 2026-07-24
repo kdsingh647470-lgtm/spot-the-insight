@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Sparkles, Calendar, Infinity as InfIcon, Timer, Leaf, Trophy, Map as MapIcon, Play, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { AdBanner } from "@/components/AdBanner";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { useResume, clearResume } from "@/lib/audio";
 
 export const Route = createFileRoute("/")({
@@ -130,6 +131,7 @@ function Home() {
           ))}
         </div>
 
+        <InstallPrompt />
         <AdBanner slot="home-bottom" />
       </main>
     </div>
