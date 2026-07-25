@@ -28,6 +28,7 @@ function LevelEditor() {
   const [showOverlay, setShowOverlay] = useState(true);
   const [showHitArea, setShowHitArea] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
   const [settings] = useGameSettings();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerW, setContainerW] = useState(0);
