@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRef, useState, useEffect, useMemo, forwardRef } from "react";
+import { useRef, useState, useEffect, useMemo, forwardRef, useCallback } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -8,8 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { getAdminLevel, setDifferences, publishLevel } from "@/lib/admin.functions";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Trash2, CheckCircle2, Eye, EyeOff, Target, Grid3x3 } from "lucide-react";
-import { useGameSettings } from "@/lib/game-settings";
+import { ArrowLeft, Save, Trash2, CheckCircle2, Eye, EyeOff, Target, Grid3x3, Play, Pencil, RotateCcw, Check, X as XIcon } from "lucide-react";
+import { useGameSettings, calibrateTap } from "@/lib/game-settings";
 
 export const Route = createFileRoute("/_authenticated/admin/levels/$id")({
   component: LevelEditor,
