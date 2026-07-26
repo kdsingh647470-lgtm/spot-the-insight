@@ -58,7 +58,7 @@ function Home() {
             <Link to="/story" className="rounded-full bg-primary-foreground px-5 py-2.5 text-sm font-bold text-primary shadow-soft">
               Play story
             </Link>
-            <Link to="/play/infinite" className="rounded-full border border-primary-foreground/40 px-5 py-2.5 text-sm font-semibold">
+            <Link to="/play/$mode" params={{ mode: "infinite" }} className="rounded-full border border-primary-foreground/40 px-5 py-2.5 text-sm font-semibold">
               Infinite
             </Link>
             <Link to="/leaderboard" className="inline-flex items-center gap-1 rounded-full border border-primary-foreground/40 px-5 py-2.5 text-sm font-semibold">
