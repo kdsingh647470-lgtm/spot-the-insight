@@ -243,16 +243,14 @@ function PreviewGame({ signedA, signedB, diffs }: { signedA: string; signedB: st
   const [elapsed, setElapsed] = useState(0);
   const [startedAt] = useState(() => Date.now());
   const surfaceRef = useRef<HTMLDivElement | null>(null);
-  }, [done, startedAt]);
+  const total = diffs.length;
+  const done = total > 0 && found.length >= total;
 
   useEffect(() => {
-    if (!surfaceRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const e of entries) setContainerW(e.contentRect.width);
-    });
-    ro.observe(surfaceRef.current);
-    return () => ro.disconnect();
-  }, []);
+    if (done) return;
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 250);
+    return () => clearInterval(t);
+  }, [done, startedAt]);
 
   const onTap = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (done) return;
