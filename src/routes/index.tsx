@@ -34,11 +34,11 @@ export const Route = createFileRoute("/")({
 });
 
 const modes = [
-  { to: "/play/daily" as const, icon: Calendar, title: "Daily Challenge", desc: "One exclusive level every day", tint: "bg-accent/15 text-accent" },
-  { to: "/play/infinite" as const, icon: InfIcon, title: "Infinite Levels", desc: "Random levels forever", tint: "bg-primary/15 text-primary" },
-  { to: "/play/timed" as const, icon: Timer, title: "Timed Mode", desc: "Beat the clock", tint: "bg-destructive/15 text-destructive" },
-  { to: "/play/relax" as const, icon: Leaf, title: "Relax Mode", desc: "No timer, unlimited hints", tint: "bg-success/15 text-success" },
-];
+  { mode: "daily", icon: Calendar, title: "Daily Challenge", desc: "One exclusive level every day", tint: "bg-accent/15 text-accent" },
+  { mode: "infinite", icon: InfIcon, title: "Infinite Levels", desc: "Random levels forever", tint: "bg-primary/15 text-primary" },
+  { mode: "timed", icon: Timer, title: "Timed Mode", desc: "Beat the clock", tint: "bg-destructive/15 text-destructive" },
+  { mode: "relax", icon: Leaf, title: "Relax Mode", desc: "No timer, unlimited hints", tint: "bg-success/15 text-success" },
+] as const;
 
 
 function Home() {
