@@ -18,7 +18,9 @@ export const getLevelById = createServerFn({ method: "GET" })
     const { data: lvl, error } = await sb.from("levels").select("*").eq("id", data.id).eq("published", true).maybeSingle();
     if (error) throw new Error(error.message);
     if (!lvl) throw new Error("Level not found");
-    const { data: diffs } = await sb.from("differences").select("id, x, y, radius, label").eq("level_id", lvl.id);
+    // Answer coordinates are not exposed via the public Data API — fetch through the admin client server-side only.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: diffs } = await supabaseAdmin.from("differences").select("id, x, y, radius, label").eq("level_id", lvl.id);
     const [signedA, signedB] = await signLevelImages(sb, [lvl.image_a_url, lvl.image_b_url]);
     return { ...lvl, image_a_url: signedA, image_b_url: signedB, differences: diffs ?? [] };
   });
