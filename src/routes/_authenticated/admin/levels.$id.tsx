@@ -243,14 +243,6 @@ function PreviewGame({ signedA, signedB, diffs }: { signedA: string; signedB: st
   const [elapsed, setElapsed] = useState(0);
   const [startedAt] = useState(() => Date.now());
   const surfaceRef = useRef<HTMLDivElement | null>(null);
-  const [containerW, setContainerW] = useState(0);
-  const total = diffs.length;
-  const done = total > 0 && found.length >= total;
-
-  useEffect(() => {
-    if (done) return;
-    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 250);
-    return () => clearInterval(t);
   }, [done, startedAt]);
 
   useEffect(() => {
