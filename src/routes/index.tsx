@@ -34,11 +34,11 @@ export const Route = createFileRoute("/")({
 });
 
 const modes = [
-  { to: "/play/daily" as const, icon: Calendar, title: "Daily Challenge", desc: "One exclusive level every day", tint: "bg-accent/15 text-accent" },
-  { to: "/play/infinite" as const, icon: InfIcon, title: "Infinite Levels", desc: "Random levels forever", tint: "bg-primary/15 text-primary" },
-  { to: "/play/timed" as const, icon: Timer, title: "Timed Mode", desc: "Beat the clock", tint: "bg-destructive/15 text-destructive" },
-  { to: "/play/relax" as const, icon: Leaf, title: "Relax Mode", desc: "No timer, unlimited hints", tint: "bg-success/15 text-success" },
-];
+  { mode: "daily", icon: Calendar, title: "Daily Challenge", desc: "One exclusive level every day", tint: "bg-accent/15 text-accent" },
+  { mode: "infinite", icon: InfIcon, title: "Infinite Levels", desc: "Random levels forever", tint: "bg-primary/15 text-primary" },
+  { mode: "timed", icon: Timer, title: "Timed Mode", desc: "Beat the clock", tint: "bg-destructive/15 text-destructive" },
+  { mode: "relax", icon: Leaf, title: "Relax Mode", desc: "No timer, unlimited hints", tint: "bg-success/15 text-success" },
+] as const;
 
 
 function Home() {
@@ -58,7 +58,7 @@ function Home() {
             <Link to="/story" className="rounded-full bg-primary-foreground px-5 py-2.5 text-sm font-bold text-primary shadow-soft">
               Play story
             </Link>
-            <Link to="/play/infinite" className="rounded-full border border-primary-foreground/40 px-5 py-2.5 text-sm font-semibold">
+            <Link to="/play/$mode" params={{ mode: "infinite" }} className="rounded-full border border-primary-foreground/40 px-5 py-2.5 text-sm font-semibold">
               Infinite
             </Link>
             <Link to="/leaderboard" className="inline-flex items-center gap-1 rounded-full border border-primary-foreground/40 px-5 py-2.5 text-sm font-semibold">
@@ -116,8 +116,9 @@ function Home() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {modes.map((m) => (
             <Link
-              key={m.to}
-              to={m.to}
+              key={m.mode}
+              to="/play/$mode"
+              params={{ mode: m.mode }}
               className="group flex items-center gap-4 rounded-3xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elevated"
             >
               <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${m.tint}`}>
