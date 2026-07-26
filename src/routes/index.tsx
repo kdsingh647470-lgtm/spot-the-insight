@@ -116,8 +116,9 @@ function Home() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {modes.map((m) => (
             <Link
-              key={m.to}
-              to={m.to}
+              key={m.mode}
+              to="/play/$mode"
+              params={{ mode: m.mode }}
               className="group flex items-center gap-4 rounded-3xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elevated"
             >
               <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${m.tint}`}>
