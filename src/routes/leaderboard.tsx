@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Trophy, Crown, Globe, CalendarDays, CalendarRange, Sunrise } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
 import { getLeaderboard } from "@/lib/levels.functions";
 
 type Scope = "global" | "weekly" | "monthly" | "daily";
@@ -89,6 +90,7 @@ function Leaderboard() {
           )}
         </ol>
       </main>
+      <AppFooter />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Sparkles, Calendar, Infinity as InfIcon, Timer, Leaf, Trophy, Map as MapIcon, Play, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
 import { AdBanner } from "@/components/AdBanner";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { useResume, clearResume } from "@/lib/audio";
@@ -135,6 +136,7 @@ function Home() {
         <InstallPrompt />
         <AdBanner slot="home-bottom" />
       </main>
+      <AppFooter />
     </div>
   );
 }
