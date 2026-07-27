@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Lock, Star, Sparkles, Home as HomeIcon, Trophy, Check } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
 import { getStoryMap, getMyStoryProgress } from "@/lib/levels.functions";
 import { supabase } from "@/integrations/supabase/client";
 
