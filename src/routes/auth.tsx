@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Trophy } from "lucide-react";
+import { AppFooter } from "@/components/AppFooter";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -98,6 +99,7 @@ function AuthPage() {
           </button>
         </p>
       </div>
+      <AppFooter />
     </div>
   );
 }
