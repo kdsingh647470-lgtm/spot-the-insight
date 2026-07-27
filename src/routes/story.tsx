@@ -181,6 +181,7 @@ function StoryMap() {
           })}
         </div>
       </main>
+      <AppFooter />
     </div>
   );
 }
