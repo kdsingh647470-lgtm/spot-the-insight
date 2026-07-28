@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Lock, Star, Sparkles, Home as HomeIcon, Trophy, Check } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { AppFooter } from "@/components/AppFooter";
+import { AdSlot } from "@/components/AdSlot";
 import { getStoryMap, getMyStoryProgress } from "@/lib/levels.functions";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -121,60 +122,13 @@ function StoryMap() {
                     New levels arriving soon.
                   </div>
                 ) : (
-                  <ol className="relative divide-y divide-border">
-                    {worldLevels.map((lvl, idx) => {
-                      const stars = progress[lvl.id] ?? 0;
-                      const cleared = stars > 0;
-                      // Level unlocks: world unlocked AND (first level OR previous level cleared).
-                      const prevCleared = idx === 0 || (progress[worldLevels[idx - 1].id] ?? 0) >= 1;
-                      const canPlay = unlocked && prevCleared;
-                      const body = (
-                        <div className="flex items-center gap-3 p-3">
-                          <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? w.ring : "ring-border"} bg-muted`}>
-                            {canPlay ? (
-                              <img src={lvl.image_a_url} alt="" className="h-full w-full object-cover" loading="lazy" />
-                            ) : (
-                              <Lock className="h-5 w-5 text-muted-foreground" />
-                            )}
-                            {cleared && (
-                              <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-success text-success-foreground shadow">
-                                <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                              </span>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className={`text-[10px] font-bold uppercase tracking-widest ${canPlay ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
-                              Level {lvl.level_number} · Difficulty {lvl.difficulty}
-                            </div>
-                            <div className={`truncate text-base font-black ${canPlay ? "" : "text-muted-foreground"}`}>{lvl.title}</div>
-                            <div className="mt-1 flex items-center gap-0.5">
-                              {[0, 1, 2].map((i) => (
-                                <Star key={i} className={`h-4 w-4 ${i < stars ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
-                              ))}
-                            </div>
-                          </div>
-                          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${canPlay ? w.chip : "bg-muted text-muted-foreground"}`}>
-                            {canPlay ? (cleared ? "Replay" : "Play") : "Locked"}
-                          </span>
-                        </div>
-                      );
-                      return (
-                        <li key={lvl.id}>
-                          {canPlay ? (
-                            <Link
-                              to="/play/$mode/$levelId"
-                              params={{ mode: "story", levelId: lvl.id }}
-                              className="block transition hover:bg-muted/50"
-                            >
-                              {body}
-                            </Link>
-                          ) : (
-                            <div aria-disabled className="opacity-70">{body}</div>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ol>
+                  <LevelList
+                    worldLevels={worldLevels}
+                    progress={progress}
+                    unlocked={unlocked}
+                    ring={w.ring}
+                    chip={w.chip}
+                  />
                 )}
               </section>
             );
@@ -185,3 +139,110 @@ function StoryMap() {
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// LevelList: groups a world's levels by difficulty tier (Easy / Intermediate
+// / Hard) and injects an AdSlot after every 2 rendered level cards.
+// ---------------------------------------------------------------------------
+
+const TIERS: { key: string; label: string; min: number; max: number; badge: string }[] = [
+  { key: "easy",         label: "Easy",         min: 1, max: 2, badge: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300" },
+  { key: "intermediate", label: "Intermediate", min: 3, max: 4, badge: "bg-amber-500/15  text-amber-600  dark:text-amber-300" },
+  { key: "hard",         label: "Hard",         min: 5, max: 6, badge: "bg-rose-500/15   text-rose-600   dark:text-rose-300" },
+];
+
+function LevelList({
+  worldLevels,
+  progress,
+  unlocked,
+  ring,
+  chip,
+}: {
+  worldLevels: LevelRow[];
+  progress: Record<string, number>;
+  unlocked: boolean;
+  ring: string;
+  chip: string;
+}) {
+  // Preserve the linear-unlock rule: previous level in the original ordering
+  // must be cleared, regardless of which tier group it renders under.
+  const clearedByIndex = worldLevels.map((lvl) => (progress[lvl.id] ?? 0) >= 1);
+
+  // Track how many level cards we've rendered across all tiers so a single
+  // ad rhythm (one ad after every 2 levels) spans the whole world.
+  let rendered = 0;
+  const nodes: React.ReactNode[] = [];
+
+  for (const tier of TIERS) {
+    const tierLevels = worldLevels
+      .map((lvl, idx) => ({ lvl, idx }))
+      .filter(({ lvl }) => lvl.difficulty >= tier.min && lvl.difficulty <= tier.max);
+    if (!tierLevels.length) continue;
+
+    nodes.push(
+      <div key={`hdr-${tier.key}`} className="flex items-center gap-2 border-t border-border bg-muted/30 px-4 py-2 first:border-t-0">
+        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest ${tier.badge}`}>
+          {tier.label}
+        </span>
+        <span className="text-[11px] text-muted-foreground">
+          {tierLevels.length} level{tierLevels.length === 1 ? "" : "s"}
+        </span>
+      </div>,
+    );
+
+    for (const { lvl, idx } of tierLevels) {
+      const stars = progress[lvl.id] ?? 0;
+      const cleared = stars > 0;
+      const prevCleared = idx === 0 || clearedByIndex[idx - 1];
+      const canPlay = unlocked && prevCleared;
+      const body = (
+        <div className="flex items-center gap-3 p-3">
+          <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted`}>
+            {canPlay ? (
+              <img src={lvl.image_a_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+            ) : (
+              <Lock className="h-5 w-5 text-muted-foreground" />
+            )}
+            {cleared && (
+              <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-success text-success-foreground shadow">
+                <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className={`text-[10px] font-bold uppercase tracking-widest ${canPlay ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
+              Level {lvl.level_number} · Difficulty {lvl.difficulty}
+            </div>
+            <div className={`truncate text-base font-black ${canPlay ? "" : "text-muted-foreground"}`}>{lvl.title}</div>
+            <div className="mt-1 flex items-center gap-0.5">
+              {[0, 1, 2].map((i) => (
+                <Star key={i} className={`h-4 w-4 ${i < stars ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
+              ))}
+            </div>
+          </div>
+          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${canPlay ? chip : "bg-muted text-muted-foreground"}`}>
+            {canPlay ? (cleared ? "Replay" : "Play") : "Locked"}
+          </span>
+        </div>
+      );
+      nodes.push(
+        <div key={lvl.id} className="border-t border-border first:border-t-0">
+          {canPlay ? (
+            <Link to="/play/$mode/$levelId" params={{ mode: "story", levelId: lvl.id }} className="block transition hover:bg-muted/50">
+              {body}
+            </Link>
+          ) : (
+            <div aria-disabled className="opacity-70">{body}</div>
+          )}
+        </div>,
+      );
+      rendered++;
+      if (rendered % 2 === 0) {
+        nodes.push(<AdSlot key={`ad-${lvl.id}`} />);
+      }
+    }
+  }
+
+  return <div className="relative">{nodes}</div>;
+}
+
