@@ -251,54 +251,62 @@ function LevelList({
   return <div className="relative">{nodes}</div>;
 }
 
-// Decorative curved path with a traveler that walks from the previous level
-// to the next. When `active` (previous level cleared) the trail draws itself
-// in and a walker moves along it.
+// Footprint trail between two consecutive levels. When `active` (previous
+// level cleared), footprints appear one-by-one along a curved path,
+// alternating left/right and rotated to follow the curve. When inactive,
+// faint dots hint at the path ahead.
 function PathConnector({ active, direction }: { active: boolean; direction: "left" | "right" }) {
-  const d = direction === "right"
-    ? "M 24 16 Q 160 88 296 16"
-    : "M 296 16 Q 160 88 24 16";
+  const p0 = direction === "right" ? { x: 30, y: 18 } : { x: 290, y: 18 };
+  const p2 = direction === "right" ? { x: 290, y: 18 } : { x: 30, y: 18 };
+  const p1 = { x: 160, y: 92 };
+
+  const STEPS = 9;
+  const points = Array.from({ length: STEPS }, (_, i) => {
+    const t = (i + 0.5) / STEPS;
+    const mt = 1 - t;
+    const x = mt * mt * p0.x + 2 * mt * t * p1.x + t * t * p2.x;
+    const y = mt * mt * p0.y + 2 * mt * t * p1.y + t * t * p2.y;
+    const dx = 2 * mt * (p1.x - p0.x) + 2 * t * (p2.x - p1.x);
+    const dy = 2 * mt * (p1.y - p0.y) + 2 * t * (p2.y - p1.y);
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    return { x, y, angle, side: i % 2 === 0 ? -1 : 1 };
+  });
+
   return (
     <div aria-hidden className="relative h-24 w-full overflow-hidden">
-      <div className={`absolute inset-0 ${active ? "bg-gradient-to-b from-sky-100/60 to-transparent dark:from-sky-500/10" : ""}`} />
+      <div className={`absolute inset-0 ${active ? "bg-gradient-to-b from-sky-100/50 to-transparent dark:from-sky-500/10" : ""}`} />
       <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
-        <path
-          d={d}
-          fill="none"
-          strokeWidth={3}
-          strokeLinecap="round"
-          strokeDasharray="6 8"
-          className={active ? "stroke-primary/70" : "stroke-muted-foreground/25"}
-        />
-        {active && (
-          <path
-            d={d}
-            fill="none"
-            strokeWidth={3.5}
-            strokeLinecap="round"
-            pathLength={1}
-            className="stroke-primary animate-path-draw"
-          />
-        )}
-        {active && (
-          <g>
-            <circle r="9" className="fill-warning/90">
-              <animateMotion dur="3.2s" repeatCount="indefinite" rotate="0" path={d} />
-            </circle>
-            <text fontSize="12" textAnchor="middle" dy="4">
-              <animateMotion dur="3.2s" repeatCount="indefinite" rotate="0" path={d} />
-              🚶
-            </text>
-          </g>
-        )}
+        {points.map((pt, i) => {
+          const rad = (pt.angle * Math.PI) / 180;
+          const nx = -Math.sin(rad) * 6 * pt.side;
+          const ny =  Math.cos(rad) * 6 * pt.side;
+          const rot = pt.angle + (pt.side > 0 ? 12 : -12);
+          return (
+            <g
+              key={i}
+              transform={`translate(${pt.x + nx} ${pt.y + ny}) rotate(${rot})`}
+              className={active ? "animate-footprint" : ""}
+              style={active ? { animationDelay: `${i * 220}ms`, opacity: 0 } : undefined}
+            >
+              {active ? (
+                <>
+                  <ellipse rx="3.2" ry="4.2" cy="1.5" className="fill-primary" />
+                  <circle r="1.2" cx="-2.2" cy="-3.5" className="fill-primary" />
+                  <circle r="1"   cx="-0.6" cy="-4.6" className="fill-primary" />
+                  <circle r="1"   cx="1"    cy="-4.6" className="fill-primary" />
+                  <circle r="1"   cx="2.4"  cy="-3.6" className="fill-primary" />
+                </>
+              ) : (
+                <circle r="1.6" className="fill-muted-foreground/30" />
+              )}
+            </g>
+          );
+        })}
       </svg>
-      <span className={`absolute top-1 left-[10%] text-2xl ${active ? "opacity-90" : "opacity-40"} animate-cloud-drift`}>☁️</span>
-      <span className={`absolute top-3 right-[14%] text-xl ${active ? "opacity-80" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
+      <span className={`absolute top-1 left-[12%] text-2xl ${active ? "opacity-90" : "opacity-40"} animate-cloud-drift`}>☁️</span>
+      <span className={`absolute top-2 right-[14%] text-xl ${active ? "opacity-80" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
       {active && (
-        <>
-          <span className="absolute bottom-1 left-[22%] text-sm animate-cloud-drift-slow">✨</span>
-          <span className="absolute bottom-2 right-[24%] text-sm animate-cloud-drift">✨</span>
-        </>
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-xs animate-cloud-drift-slow">✨</span>
       )}
     </div>
   );
