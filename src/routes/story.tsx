@@ -263,7 +263,7 @@ function LevelList({
         </div>
       );
       nodes.push(
-        <div key={lvl.id} className="border-t border-border first:border-t-0">
+        <div key={lvl.id} id={`lvl-${lvl.id}`} className="border-t border-border first:border-t-0">
           {canPlay ? (
             <Link to="/play/$mode/$levelId" params={{ mode: "story", levelId: lvl.id }} className="block transition hover:bg-muted/50">
               {body}
