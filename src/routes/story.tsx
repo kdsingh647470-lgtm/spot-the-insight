@@ -55,6 +55,24 @@ function StoryMap() {
   const progress = progQ.data ?? {};
   const levels = (mapQ.data ?? []) as LevelRow[];
 
+  // Read the "just cleared" flag once data is ready, spotlight the connector
+  // between that level and the next one, then clear the flag after ~3.5s.
+  const [justClearedId, setJustClearedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!levels.length) return;
+    let id: string | null = null;
+    try { id = sessionStorage.getItem("story-just-cleared"); } catch {}
+    if (!id) return;
+    setJustClearedId(id);
+    try { sessionStorage.removeItem("story-just-cleared"); } catch {}
+    // Scroll the cleared level into view so the trail animation is visible.
+    requestAnimationFrame(() => {
+      document.getElementById(`lvl-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    const t = setTimeout(() => setJustClearedId(null), 3500);
+    return () => clearTimeout(t);
+  }, [levels.length]);
+
   // Group by world
   const byWorld = new Map<number, LevelRow[]>();
   for (const l of levels) {
