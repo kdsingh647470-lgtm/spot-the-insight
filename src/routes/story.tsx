@@ -177,12 +177,14 @@ function LevelList({
   unlocked,
   ring,
   chip,
+  justClearedId,
 }: {
   worldLevels: LevelRow[];
   progress: Record<string, number>;
   unlocked: boolean;
   ring: string;
   chip: string;
+  justClearedId: string | null;
 }) {
   // Preserve the linear-unlock rule: previous level in the original ordering
   // must be cleared, regardless of which tier group it renders under.
@@ -191,6 +193,7 @@ function LevelList({
   // Track how many level cards we've rendered across all tiers so a single
   // ad rhythm (one ad after every 2 levels) spans the whole world.
   let rendered = 0;
+  let prevLvlId: string | null = null;
   const nodes: React.ReactNode[] = [];
 
   for (const tier of TIERS) {
@@ -217,9 +220,18 @@ function LevelList({
       const prevCleared = idx === 0 || clearedByIndex[idx - 1];
       const canPlay = unlocked && prevCleared;
       if (tierPos > 0) {
-        nodes.push(<PathConnector key={`path-${lvl.id}`} active={prevCleared} direction={tierPos % 2 === 0 ? "right" : "left"} />);
+        const spotlight = !!justClearedId && prevLvlId === justClearedId;
+        nodes.push(
+          <PathConnector
+            key={`path-${lvl.id}`}
+            active={prevCleared}
+            direction={tierPos % 2 === 0 ? "right" : "left"}
+            spotlight={spotlight}
+          />,
+        );
       }
       tierPos++;
+      prevLvlId = lvl.id;
       const body = (
         <div className="flex items-center gap-3 p-3">
           <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted`}>
