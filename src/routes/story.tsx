@@ -56,9 +56,14 @@ function StoryMap() {
   const progress = progQ.data ?? {};
   const levels = (mapQ.data ?? []) as LevelRow[];
 
-  // Read the "just cleared" flag once data is ready, spotlight the connector
-  // between that level and the next one, then clear the flag after ~3.5s.
+  // Read the "just cleared" flag once data is ready. This kicks off the full
+  // post-level cinematic: camera pan from the cleared node to the next node,
+  // duck walking the footprint trail, and a Play button that stays hidden
+  // until the celebration finishes.
   const [justClearedId, setJustClearedId] = useState<string | null>(null);
+  const [pendingNextId, setPendingNextId] = useState<string | null>(null);
+  const panRafRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!levels.length) return;
     let id: string | null = null;
@@ -66,13 +71,54 @@ function StoryMap() {
     if (!id) return;
     setJustClearedId(id);
     try { sessionStorage.removeItem("story-just-cleared"); } catch {}
-    // Scroll the cleared level into view so the trail animation is visible.
-    requestAnimationFrame(() => {
-      document.getElementById(`lvl-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-    const t = setTimeout(() => setJustClearedId(null), 3500);
-    return () => clearTimeout(t);
+
+    // Find the next level in the same world (linear order).
+    const cleared = levels.find((l) => l.id === id);
+    if (cleared) {
+      const worldLvls = levels
+        .filter((l) => l.world === cleared.world)
+        .sort((a, b) => a.level_number - b.level_number);
+      const idx = worldLvls.findIndex((l) => l.id === id);
+      const next = idx >= 0 ? worldLvls[idx + 1] : null;
+      if (next) setPendingNextId(next.id);
+    }
+
+    // Snap to the cleared node first so the trail is visible, then ease-scroll
+    // toward the next node so the camera "follows" the duck up the map.
+    const clearedEl = document.getElementById(`lvl-${id}`);
+    clearedEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const panTimer = window.setTimeout(() => {
+      const nextEl = pendingNextIdRef.current
+        ? document.getElementById(`lvl-${pendingNextIdRef.current}`)
+        : null;
+      if (!nextEl) return;
+      const targetRect = nextEl.getBoundingClientRect();
+      const targetY = window.scrollY + targetRect.top - (window.innerHeight - targetRect.height) / 2;
+      const startY = window.scrollY;
+      const dur = 3800;
+      const start = performance.now();
+      const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / dur);
+        window.scrollTo(0, startY + (targetY - startY) * easeInOut(t));
+        if (t < 1) panRafRef.current = requestAnimationFrame(tick);
+      };
+      panRafRef.current = requestAnimationFrame(tick);
+    }, 600);
+
+    const clearTimer = window.setTimeout(() => setJustClearedId(null), 5200);
+    return () => {
+      window.clearTimeout(panTimer);
+      window.clearTimeout(clearTimer);
+      if (panRafRef.current) cancelAnimationFrame(panRafRef.current);
+    };
   }, [levels.length]);
+
+  // Mirror pendingNextId into a ref so the setTimeout closure sees the latest
+  // value after the state has flushed.
+  const pendingNextIdRef = useRef<string | null>(null);
+  useEffect(() => { pendingNextIdRef.current = pendingNextId; }, [pendingNextId]);
 
   // Group by world
   const byWorld = new Map<number, LevelRow[]>();
@@ -81,6 +127,7 @@ function StoryMap() {
     arr.push(l);
     byWorld.set(l.world, arr);
   }
+
 
   // World N unlocks when every level of World N-1 has ≥1 star (any completion).
   // World 1 always unlocked. Worlds with zero authored levels stay "Coming soon".
