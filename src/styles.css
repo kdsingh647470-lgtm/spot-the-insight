@@ -157,3 +157,11 @@
 }
 .animate-ping-ring { animation: ping-ring 0.7s ease-out forwards; }
 .animate-shake { animation: shake-x 0.4s ease-in-out; }
+
+@keyframes cloud-drift {
+  0% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  100% { transform: translateX(-6px); }
+}
+.animate-cloud-drift { animation: cloud-drift 6s ease-in-out infinite; }
+.animate-cloud-drift-slow { animation: cloud-drift 9s ease-in-out infinite; }

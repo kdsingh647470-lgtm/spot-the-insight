@@ -190,11 +190,16 @@ function LevelList({
       </div>,
     );
 
+    let tierPos = 0;
     for (const { lvl, idx } of tierLevels) {
       const stars = progress[lvl.id] ?? 0;
       const cleared = stars > 0;
       const prevCleared = idx === 0 || clearedByIndex[idx - 1];
       const canPlay = unlocked && prevCleared;
+      if (tierPos > 0) {
+        nodes.push(<PathConnector key={`path-${lvl.id}`} active={prevCleared} direction={tierPos % 2 === 0 ? "right" : "left"} />);
+      }
+      tierPos++;
       const body = (
         <div className="flex items-center gap-3 p-3">
           <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted`}>
@@ -211,7 +216,7 @@ function LevelList({
           </div>
           <div className="min-w-0 flex-1">
             <div className={`text-[10px] font-bold uppercase tracking-widest ${canPlay ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
-              Level {lvl.level_number} · Difficulty {lvl.difficulty}
+              Level {lvl.level_number}
             </div>
             <div className={`truncate text-base font-black ${canPlay ? "" : "text-muted-foreground"}`}>{lvl.title}</div>
             <div className="mt-1 flex items-center gap-0.5">
@@ -240,7 +245,33 @@ function LevelList({
       if (rendered % 2 === 0) {
         nodes.push(<AdSlot key={`ad-${lvl.id}`} />);
       }
-    }
+}
+
+// Decorative curved path with drifting clouds between two consecutive levels.
+function PathConnector({ active, direction }: { active: boolean; direction: "left" | "right" }) {
+  const d = direction === "right"
+    ? "M 20 4 Q 160 44 300 4"
+    : "M 300 4 Q 160 44 20 4";
+  return (
+    <div aria-hidden className="relative h-12 w-full overflow-hidden">
+      <svg viewBox="0 0 320 48" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+        <path
+          d={d}
+          fill="none"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeDasharray="4 6"
+          className={active ? "stroke-primary/60" : "stroke-muted-foreground/25"}
+        />
+      </svg>
+      <span className={`absolute top-1 left-[8%] text-lg ${active ? "opacity-80" : "opacity-40"} animate-cloud-drift`}>☁️</span>
+      <span className={`absolute top-4 right-[12%] text-sm ${active ? "opacity-70" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
+      {active && (
+        <span className="absolute top-1.5 left-1/2 -translate-x-1/2 text-base animate-cloud-drift-slow">✨</span>
+      )}
+    </div>
+  );
+}
   }
 
   return <div className="relative">{nodes}</div>;
