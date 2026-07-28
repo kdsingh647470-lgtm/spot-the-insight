@@ -273,6 +273,8 @@ function LevelList({
       const cleared = stars > 0;
       const prevCleared = idx === 0 || clearedByIndex[idx - 1];
       const canPlay = unlocked && prevCleared;
+      const isPendingNext = pendingNextId === lvl.id;
+      const showPlay = canPlay && !isPendingNext;
       if (tierPos > 0) {
         const spotlight = !!justClearedId && prevLvlId === justClearedId;
         nodes.push(
@@ -281,6 +283,7 @@ function LevelList({
             active={prevCleared}
             direction={tierPos % 2 === 0 ? "right" : "left"}
             spotlight={spotlight}
+            onFinished={spotlight ? onCelebrationDone : undefined}
           />,
         );
       }
@@ -288,7 +291,7 @@ function LevelList({
       prevLvlId = lvl.id;
       const body = (
         <div className="flex items-center gap-3 p-3">
-          <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted`}>
+          <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted ${isPendingNext ? "animate-marker-pulse" : ""}`}>
             {canPlay ? (
               <img src={lvl.image_a_url} alt="" className="h-full w-full object-cover" loading="lazy" />
             ) : (
@@ -311,14 +314,24 @@ function LevelList({
               ))}
             </div>
           </div>
-          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${canPlay ? chip : "bg-muted text-muted-foreground"}`}>
-            {canPlay ? (cleared ? "Replay" : "Play") : "Locked"}
-          </span>
+          {showPlay ? (
+            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${chip} animate-fade-in`}>
+              {cleared ? "Replay" : "Play"}
+            </span>
+          ) : isPendingNext ? (
+            <span className="shrink-0 rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-primary">
+              Duck on the way…
+            </span>
+          ) : (
+            <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
+              Locked
+            </span>
+          )}
         </div>
       );
       nodes.push(
         <div key={lvl.id} id={`lvl-${lvl.id}`} className="border-t border-border first:border-t-0">
-          {canPlay ? (
+          {showPlay ? (
             <Link to="/play/$mode/$levelId" params={{ mode: "story", levelId: lvl.id }} className="block transition hover:bg-muted/50">
               {body}
             </Link>
