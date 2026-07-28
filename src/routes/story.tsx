@@ -228,6 +228,8 @@ function LevelList({
   ring,
   chip,
   justClearedId,
+  pendingNextId,
+  onCelebrationDone,
 }: {
   worldLevels: LevelRow[];
   progress: Record<string, number>;
@@ -235,6 +237,8 @@ function LevelList({
   ring: string;
   chip: string;
   justClearedId: string | null;
+  pendingNextId: string | null;
+  onCelebrationDone: () => void;
 }) {
   // Preserve the linear-unlock rule: previous level in the original ordering
   // must be cleared, regardless of which tier group it renders under.
