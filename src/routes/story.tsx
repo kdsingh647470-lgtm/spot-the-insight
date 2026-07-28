@@ -245,35 +245,62 @@ function LevelList({
       if (rendered % 2 === 0) {
         nodes.push(<AdSlot key={`ad-${lvl.id}`} />);
       }
-}
-
-// Decorative curved path with drifting clouds between two consecutive levels.
-function PathConnector({ active, direction }: { active: boolean; direction: "left" | "right" }) {
-  const d = direction === "right"
-    ? "M 20 4 Q 160 44 300 4"
-    : "M 300 4 Q 160 44 20 4";
-  return (
-    <div aria-hidden className="relative h-12 w-full overflow-hidden">
-      <svg viewBox="0 0 320 48" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
-        <path
-          d={d}
-          fill="none"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeDasharray="4 6"
-          className={active ? "stroke-primary/60" : "stroke-muted-foreground/25"}
-        />
-      </svg>
-      <span className={`absolute top-1 left-[8%] text-lg ${active ? "opacity-80" : "opacity-40"} animate-cloud-drift`}>☁️</span>
-      <span className={`absolute top-4 right-[12%] text-sm ${active ? "opacity-70" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
-      {active && (
-        <span className="absolute top-1.5 left-1/2 -translate-x-1/2 text-base animate-cloud-drift-slow">✨</span>
-      )}
-    </div>
-  );
-}
+    }
   }
 
   return <div className="relative">{nodes}</div>;
+}
+
+// Decorative curved path with a traveler that walks from the previous level
+// to the next. When `active` (previous level cleared) the trail draws itself
+// in and a walker moves along it.
+function PathConnector({ active, direction }: { active: boolean; direction: "left" | "right" }) {
+  const d = direction === "right"
+    ? "M 24 16 Q 160 88 296 16"
+    : "M 296 16 Q 160 88 24 16";
+  return (
+    <div aria-hidden className="relative h-24 w-full overflow-hidden">
+      <div className={`absolute inset-0 ${active ? "bg-gradient-to-b from-sky-100/60 to-transparent dark:from-sky-500/10" : ""}`} />
+      <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+        <path
+          d={d}
+          fill="none"
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeDasharray="6 8"
+          className={active ? "stroke-primary/70" : "stroke-muted-foreground/25"}
+        />
+        {active && (
+          <path
+            d={d}
+            fill="none"
+            strokeWidth={3.5}
+            strokeLinecap="round"
+            pathLength={1}
+            className="stroke-primary animate-path-draw"
+          />
+        )}
+        {active && (
+          <g>
+            <circle r="9" className="fill-warning/90">
+              <animateMotion dur="3.2s" repeatCount="indefinite" rotate="0" path={d} />
+            </circle>
+            <text fontSize="12" textAnchor="middle" dy="4">
+              <animateMotion dur="3.2s" repeatCount="indefinite" rotate="0" path={d} />
+              🚶
+            </text>
+          </g>
+        )}
+      </svg>
+      <span className={`absolute top-1 left-[10%] text-2xl ${active ? "opacity-90" : "opacity-40"} animate-cloud-drift`}>☁️</span>
+      <span className={`absolute top-3 right-[14%] text-xl ${active ? "opacity-80" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
+      {active && (
+        <>
+          <span className="absolute bottom-1 left-[22%] text-sm animate-cloud-drift-slow">✨</span>
+          <span className="absolute bottom-2 right-[24%] text-sm animate-cloud-drift">✨</span>
+        </>
+      )}
+    </div>
+  );
 }
 
