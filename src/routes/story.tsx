@@ -284,13 +284,14 @@ function LevelList({
 }
 
 // Footprint trail between two consecutive levels. When `active` (previous
-// level cleared), footprints appear one-by-one along a curved path,
-// alternating left/right and rotated to follow the curve. When inactive,
-// faint dots hint at the path ahead.
-function PathConnector({ active, direction }: { active: boolean; direction: "left" | "right" }) {
+// level cleared), footprints appear one-by-one along a curved path. When
+// `spotlight` is true (the user just cleared the level above), a duck holding
+// a magnifying glass walks along the same curve for ~3s.
+function PathConnector({ active, direction, spotlight = false }: { active: boolean; direction: "left" | "right"; spotlight?: boolean }) {
   const p0 = direction === "right" ? { x: 30, y: 18 } : { x: 290, y: 18 };
   const p2 = direction === "right" ? { x: 290, y: 18 } : { x: 30, y: 18 };
   const p1 = { x: 160, y: 92 };
+  const pathD = `M ${p0.x} ${p0.y} Q ${p1.x} ${p1.y} ${p2.x} ${p2.y}`;
 
   const STEPS = 9;
   const points = Array.from({ length: STEPS }, (_, i) => {
@@ -305,22 +306,23 @@ function PathConnector({ active, direction }: { active: boolean; direction: "lef
   });
 
   return (
-    <div aria-hidden className="relative h-24 w-full overflow-hidden">
-      <div className={`absolute inset-0 ${active ? "bg-gradient-to-b from-sky-100/50 to-transparent dark:from-sky-500/10" : ""}`} />
+    <div aria-hidden className={`relative w-full overflow-hidden ${spotlight ? "h-32" : "h-24"}`}>
+      <div className={`absolute inset-0 ${active || spotlight ? "bg-gradient-to-b from-sky-100/50 to-transparent dark:from-sky-500/10" : ""}`} />
       <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
         {points.map((pt, i) => {
           const rad = (pt.angle * Math.PI) / 180;
           const nx = -Math.sin(rad) * 6 * pt.side;
           const ny =  Math.cos(rad) * 6 * pt.side;
           const rot = pt.angle + (pt.side > 0 ? 12 : -12);
+          const showPrint = active || spotlight;
           return (
             <g
               key={i}
               transform={`translate(${pt.x + nx} ${pt.y + ny}) rotate(${rot})`}
-              className={active ? "animate-footprint" : ""}
-              style={active ? { animationDelay: `${i * 220}ms`, opacity: 0 } : undefined}
+              className={showPrint ? "animate-footprint" : ""}
+              style={showPrint ? { animationDelay: `${i * 220}ms`, opacity: 0 } : undefined}
             >
-              {active ? (
+              {showPrint ? (
                 <>
                   <ellipse rx="3.2" ry="4.2" cy="1.5" className="fill-primary" />
                   <circle r="1.2" cx="-2.2" cy="-3.5" className="fill-primary" />
@@ -334,11 +336,28 @@ function PathConnector({ active, direction }: { active: boolean; direction: "lef
             </g>
           );
         })}
+
+        {/* Duck-with-lens walks the path once when spotlighting the newly
+            unlocked next level. */}
+        {spotlight && (
+          <g>
+            <text fontSize="18" textAnchor="middle" dy="6">
+              🦆
+              <animateMotion dur="3s" repeatCount="1" fill="freeze" rotate="0" path={pathD} />
+            </text>
+            <text fontSize="12" textAnchor="middle" dy="-2" dx="8">
+              🔎
+              <animateMotion dur="3s" repeatCount="1" fill="freeze" rotate="0" path={pathD} />
+            </text>
+          </g>
+        )}
       </svg>
-      <span className={`absolute top-1 left-[12%] text-2xl ${active ? "opacity-90" : "opacity-40"} animate-cloud-drift`}>☁️</span>
-      <span className={`absolute top-2 right-[14%] text-xl ${active ? "opacity-80" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
-      {active && (
-        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-xs animate-cloud-drift-slow">✨</span>
+      <span className={`absolute top-1 left-[12%] text-2xl ${active || spotlight ? "opacity-90" : "opacity-40"} animate-cloud-drift`}>☁️</span>
+      <span className={`absolute top-2 right-[14%] text-xl ${active || spotlight ? "opacity-80" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
+      {spotlight && (
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow animate-fade-in">
+          Next level unlocked
+        </span>
       )}
     </div>
   );
