@@ -211,7 +211,7 @@ function LevelList({
           </div>
           <div className="min-w-0 flex-1">
             <div className={`text-[10px] font-bold uppercase tracking-widest ${canPlay ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
-              Level {lvl.level_number} · Difficulty {lvl.difficulty}
+              Level {lvl.level_number}
             </div>
             <div className={`truncate text-base font-black ${canPlay ? "" : "text-muted-foreground"}`}>{lvl.title}</div>
             <div className="mt-1 flex items-center gap-0.5">
