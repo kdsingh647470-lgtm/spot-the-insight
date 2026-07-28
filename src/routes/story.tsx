@@ -354,11 +354,20 @@ function LevelList({
 // level cleared), footprints appear one-by-one along a curved path. When
 // `spotlight` is true (the user just cleared the level above), a duck holding
 // a magnifying glass walks along the same curve for ~3s.
-function PathConnector({ active, direction, spotlight = false }: { active: boolean; direction: "left" | "right"; spotlight?: boolean }) {
+function PathConnector({
+  active,
+  direction,
+  spotlight = false,
+  onFinished,
+}: {
+  active: boolean;
+  direction: "left" | "right";
+  spotlight?: boolean;
+  onFinished?: () => void;
+}) {
   const p0 = direction === "right" ? { x: 30, y: 18 } : { x: 290, y: 18 };
   const p2 = direction === "right" ? { x: 290, y: 18 } : { x: 30, y: 18 };
   const p1 = { x: 160, y: 92 };
-  const pathD = `M ${p0.x} ${p0.y} Q ${p1.x} ${p1.y} ${p2.x} ${p2.y}`;
 
   const STEPS = 9;
   const points = Array.from({ length: STEPS }, (_, i) => {
@@ -373,8 +382,28 @@ function PathConnector({ active, direction, spotlight = false }: { active: boole
   });
 
   return (
-    <div aria-hidden className={`relative w-full overflow-hidden ${spotlight ? "h-32" : "h-24"}`}>
-      <div className={`absolute inset-0 ${active || spotlight ? "bg-gradient-to-b from-sky-100/50 to-transparent dark:from-sky-500/10" : ""}`} />
+    <div aria-hidden className={`relative w-full overflow-hidden ${spotlight ? "h-40" : "h-24"}`}>
+      <div className={`absolute inset-0 ${active || spotlight ? "bg-gradient-to-b from-sky-100/60 via-sky-50/20 to-transparent dark:from-sky-500/10" : ""}`} />
+
+      {/* Ambient life during spotlight — butterflies, pollen motes. */}
+      {spotlight && (
+        <>
+          <span className="pointer-events-none absolute left-[6%] top-[38%] text-lg animate-butterfly" style={{ animationDelay: "0.3s" }}>🦋</span>
+          <span className="pointer-events-none absolute right-[8%] top-[54%] text-base animate-butterfly" style={{ animationDelay: "1.4s", animationDuration: "7s" }}>🦋</span>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span
+              key={i}
+              className="pointer-events-none absolute h-1.5 w-1.5 rounded-full bg-warning/70"
+              style={{
+                left: `${10 + i * 18}%`,
+                bottom: "10%",
+                animation: `pollen-float ${3 + i * 0.4}s ease-out ${i * 0.3}s infinite`,
+              }}
+            />
+          ))}
+        </>
+      )}
+
       <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
         {points.map((pt, i) => {
           const rad = (pt.angle * Math.PI) / 180;
@@ -404,29 +433,18 @@ function PathConnector({ active, direction, spotlight = false }: { active: boole
           );
         })}
 
-        {/* Duck-with-lens walks the path once when spotlighting the newly
-            unlocked next level. */}
-        {spotlight && (
-          <g>
-            <text fontSize="18" textAnchor="middle" dy="6">
-              🦆
-              <animateMotion dur="3s" repeatCount="1" fill="freeze" rotate="0" path={pathD} />
-            </text>
-            <text fontSize="12" textAnchor="middle" dy="-2" dx="8">
-              🔎
-              <animateMotion dur="3s" repeatCount="1" fill="freeze" rotate="0" path={pathD} />
-            </text>
-          </g>
-        )}
+        {spotlight && <DuckWalk p0={p0} p1={p1} p2={p2} onFinished={onFinished} />}
       </svg>
+
       <span className={`absolute top-1 left-[12%] text-2xl ${active || spotlight ? "opacity-90" : "opacity-40"} animate-cloud-drift`}>☁️</span>
       <span className={`absolute top-2 right-[14%] text-xl ${active || spotlight ? "opacity-80" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
       {spotlight && (
-        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow animate-fade-in">
-          Next level unlocked
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow animate-fade-in">
+          Next level unlocking…
         </span>
       )}
     </div>
   );
+}
 }
 
