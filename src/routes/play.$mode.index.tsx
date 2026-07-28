@@ -9,7 +9,7 @@ const MODE_META: Record<string, { title: string; description: string }> = {
   story:    { title: "Story Mode — Spot the Difference AI",        description: "Explore four themed worlds of hand-crafted spot-the-difference puzzles." },
 };
 
-export const Route = createFileRoute("/play/$mode")({
+export const Route = createFileRoute("/play/$mode/")({
   head: ({ params }) => {
     const m = MODE_META[params.mode] ?? MODE_META.infinite;
     return {

@@ -17,9 +17,9 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PlayModeRouteImport } from './routes/play.$mode'
 import { Route as ApiGenerateLevelImagesRouteImport } from './routes/api/generate-level-images'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as PlayModeIndexRouteImport } from './routes/play.$mode.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as PlayModeLevelIdRouteImport } from './routes/play.$mode.$levelId'
 import { Route as AuthenticatedAdminLevelsIdRouteImport } from './routes/_authenticated/admin/levels.$id'
@@ -63,11 +63,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlayModeRoute = PlayModeRouteImport.update({
-  id: '/play/$mode',
-  path: '/play/$mode',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiGenerateLevelImagesRoute = ApiGenerateLevelImagesRouteImport.update({
   id: '/api/generate-level-images',
   path: '/api/generate-level-images',
@@ -78,15 +73,20 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const PlayModeIndexRoute = PlayModeIndexRouteImport.update({
+  id: '/play/$mode/',
+  path: '/play/$mode/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const PlayModeLevelIdRoute = PlayModeLevelIdRouteImport.update({
-  id: '/$levelId',
-  path: '/$levelId',
-  getParentRoute: () => PlayModeRoute,
+  id: '/play/$mode/$levelId',
+  path: '/play/$mode/$levelId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminLevelsIdRoute =
   AuthenticatedAdminLevelsIdRouteImport.update({
@@ -105,9 +105,9 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
-  '/play/$mode': typeof PlayModeRouteWithChildren
   '/play/$mode/$levelId': typeof PlayModeLevelIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/play/$mode/': typeof PlayModeIndexRoute
   '/admin/levels/$id': typeof AuthenticatedAdminLevelsIdRoute
 }
 export interface FileRoutesByTo {
@@ -120,9 +120,9 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
-  '/play/$mode': typeof PlayModeRouteWithChildren
   '/play/$mode/$levelId': typeof PlayModeLevelIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/play/$mode': typeof PlayModeIndexRoute
   '/admin/levels/$id': typeof AuthenticatedAdminLevelsIdRoute
 }
 export interface FileRoutesById {
@@ -137,9 +137,9 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/api/generate-level-images': typeof ApiGenerateLevelImagesRoute
-  '/play/$mode': typeof PlayModeRouteWithChildren
   '/play/$mode/$levelId': typeof PlayModeLevelIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/play/$mode/': typeof PlayModeIndexRoute
   '/_authenticated/admin/levels/$id': typeof AuthenticatedAdminLevelsIdRoute
 }
 export interface FileRouteTypes {
@@ -154,9 +154,9 @@ export interface FileRouteTypes {
     | '/terms'
     | '/profile'
     | '/api/generate-level-images'
-    | '/play/$mode'
     | '/play/$mode/$levelId'
     | '/admin/'
+    | '/play/$mode/'
     | '/admin/levels/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -169,9 +169,9 @@ export interface FileRouteTypes {
     | '/terms'
     | '/profile'
     | '/api/generate-level-images'
-    | '/play/$mode'
     | '/play/$mode/$levelId'
     | '/admin'
+    | '/play/$mode'
     | '/admin/levels/$id'
   id:
     | '__root__'
@@ -185,9 +185,9 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/profile'
     | '/api/generate-level-images'
-    | '/play/$mode'
     | '/play/$mode/$levelId'
     | '/_authenticated/admin/'
+    | '/play/$mode/'
     | '/_authenticated/admin/levels/$id'
   fileRoutesById: FileRoutesById
 }
@@ -201,7 +201,8 @@ export interface RootRouteChildren {
   StoryRoute: typeof StoryRoute
   TermsRoute: typeof TermsRoute
   ApiGenerateLevelImagesRoute: typeof ApiGenerateLevelImagesRoute
-  PlayModeRoute: typeof PlayModeRouteWithChildren
+  PlayModeLevelIdRoute: typeof PlayModeLevelIdRoute
+  PlayModeIndexRoute: typeof PlayModeIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -262,13 +263,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/play/$mode': {
-      id: '/play/$mode'
-      path: '/play/$mode'
-      fullPath: '/play/$mode'
-      preLoaderRoute: typeof PlayModeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/generate-level-images': {
       id: '/api/generate-level-images'
       path: '/api/generate-level-images'
@@ -283,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/play/$mode/': {
+      id: '/play/$mode/'
+      path: '/play/$mode'
+      fullPath: '/play/$mode/'
+      preLoaderRoute: typeof PlayModeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
       path: '/admin'
@@ -292,10 +293,10 @@ declare module '@tanstack/react-router' {
     }
     '/play/$mode/$levelId': {
       id: '/play/$mode/$levelId'
-      path: '/$levelId'
+      path: '/play/$mode/$levelId'
       fullPath: '/play/$mode/$levelId'
       preLoaderRoute: typeof PlayModeLevelIdRouteImport
-      parentRoute: typeof PlayModeRoute
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/levels/$id': {
       id: '/_authenticated/admin/levels/$id'
@@ -322,18 +323,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface PlayModeRouteChildren {
-  PlayModeLevelIdRoute: typeof PlayModeLevelIdRoute
-}
-
-const PlayModeRouteChildren: PlayModeRouteChildren = {
-  PlayModeLevelIdRoute: PlayModeLevelIdRoute,
-}
-
-const PlayModeRouteWithChildren = PlayModeRoute._addFileChildren(
-  PlayModeRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -344,7 +333,8 @@ const rootRouteChildren: RootRouteChildren = {
   StoryRoute: StoryRoute,
   TermsRoute: TermsRoute,
   ApiGenerateLevelImagesRoute: ApiGenerateLevelImagesRoute,
-  PlayModeRoute: PlayModeRouteWithChildren,
+  PlayModeLevelIdRoute: PlayModeLevelIdRoute,
+  PlayModeIndexRoute: PlayModeIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
