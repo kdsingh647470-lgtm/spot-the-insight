@@ -74,10 +74,11 @@ export function Game({ mode, levelId: initialLevelId }: { mode: Mode; levelId?: 
 
   async function pickNext() {
     if (mode === "story") {
-      if (!levelId) { navigate({ to: "/story" }); return; }
-      const nextId = await getNextStoryLevel({ data: { currentId: levelId } });
-      if (nextId) { setLevelId(nextId); return; }
-      toast.success("World complete! 🎉");
+      // Return to the world map so the user sees the animated trail advance
+      // from the just-cleared level to the next one, then taps Play.
+      if (typeof window !== "undefined" && levelId) {
+        try { sessionStorage.setItem("story-just-cleared", levelId); } catch {}
+      }
       navigate({ to: "/story" });
       return;
     }
