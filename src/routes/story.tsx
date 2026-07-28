@@ -146,7 +146,9 @@ function StoryMap() {
                     unlocked={unlocked}
                     ring={w.ring}
                     chip={w.chip}
+                    justClearedId={justClearedId}
                   />
+
                 )}
               </section>
             );
