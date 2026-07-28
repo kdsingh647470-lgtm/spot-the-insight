@@ -190,11 +190,16 @@ function LevelList({
       </div>,
     );
 
+    let tierPos = 0;
     for (const { lvl, idx } of tierLevels) {
       const stars = progress[lvl.id] ?? 0;
       const cleared = stars > 0;
       const prevCleared = idx === 0 || clearedByIndex[idx - 1];
       const canPlay = unlocked && prevCleared;
+      if (tierPos > 0) {
+        nodes.push(<PathConnector key={`path-${lvl.id}`} active={prevCleared} direction={tierPos % 2 === 0 ? "right" : "left"} />);
+      }
+      tierPos++;
       const body = (
         <div className="flex items-center gap-3 p-3">
           <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted`}>
