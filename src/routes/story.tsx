@@ -195,6 +195,8 @@ function StoryMap() {
                     ring={w.ring}
                     chip={w.chip}
                     justClearedId={justClearedId}
+                    pendingNextId={pendingNextId}
+                    onCelebrationDone={() => setPendingNextId(null)}
                   />
 
                 )}
