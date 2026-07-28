@@ -165,3 +165,9 @@
 }
 .animate-cloud-drift { animation: cloud-drift 6s ease-in-out infinite; }
 .animate-cloud-drift-slow { animation: cloud-drift 9s ease-in-out infinite; }
+
+@keyframes path-draw {
+  0%   { stroke-dasharray: 0 1; stroke-dashoffset: 0; opacity: 0.9; }
+  100% { stroke-dasharray: 1 0; stroke-dashoffset: 0; opacity: 1; }
+}
+.animate-path-draw { animation: path-draw 1.6s ease-out both; }
