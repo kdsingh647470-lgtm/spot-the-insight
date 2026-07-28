@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Lock, Star, Sparkles, Home as HomeIcon, Trophy, Check } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { AppFooter } from "@/components/AppFooter";
 import { AdSlot } from "@/components/AdSlot";
+import { DuckWalk } from "@/components/story/DuckWalk";
 import { getStoryMap, getMyStoryProgress } from "@/lib/levels.functions";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -55,9 +56,14 @@ function StoryMap() {
   const progress = progQ.data ?? {};
   const levels = (mapQ.data ?? []) as LevelRow[];
 
-  // Read the "just cleared" flag once data is ready, spotlight the connector
-  // between that level and the next one, then clear the flag after ~3.5s.
+  // Read the "just cleared" flag once data is ready. This kicks off the full
+  // post-level cinematic: camera pan from the cleared node to the next node,
+  // duck walking the footprint trail, and a Play button that stays hidden
+  // until the celebration finishes.
   const [justClearedId, setJustClearedId] = useState<string | null>(null);
+  const [pendingNextId, setPendingNextId] = useState<string | null>(null);
+  const panRafRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!levels.length) return;
     let id: string | null = null;
@@ -65,13 +71,54 @@ function StoryMap() {
     if (!id) return;
     setJustClearedId(id);
     try { sessionStorage.removeItem("story-just-cleared"); } catch {}
-    // Scroll the cleared level into view so the trail animation is visible.
-    requestAnimationFrame(() => {
-      document.getElementById(`lvl-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-    const t = setTimeout(() => setJustClearedId(null), 3500);
-    return () => clearTimeout(t);
+
+    // Find the next level in the same world (linear order).
+    const cleared = levels.find((l) => l.id === id);
+    if (cleared) {
+      const worldLvls = levels
+        .filter((l) => l.world === cleared.world)
+        .sort((a, b) => a.level_number - b.level_number);
+      const idx = worldLvls.findIndex((l) => l.id === id);
+      const next = idx >= 0 ? worldLvls[idx + 1] : null;
+      if (next) setPendingNextId(next.id);
+    }
+
+    // Snap to the cleared node first so the trail is visible, then ease-scroll
+    // toward the next node so the camera "follows" the duck up the map.
+    const clearedEl = document.getElementById(`lvl-${id}`);
+    clearedEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const panTimer = window.setTimeout(() => {
+      const nextEl = pendingNextIdRef.current
+        ? document.getElementById(`lvl-${pendingNextIdRef.current}`)
+        : null;
+      if (!nextEl) return;
+      const targetRect = nextEl.getBoundingClientRect();
+      const targetY = window.scrollY + targetRect.top - (window.innerHeight - targetRect.height) / 2;
+      const startY = window.scrollY;
+      const dur = 3800;
+      const start = performance.now();
+      const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / dur);
+        window.scrollTo(0, startY + (targetY - startY) * easeInOut(t));
+        if (t < 1) panRafRef.current = requestAnimationFrame(tick);
+      };
+      panRafRef.current = requestAnimationFrame(tick);
+    }, 600);
+
+    const clearTimer = window.setTimeout(() => setJustClearedId(null), 5200);
+    return () => {
+      window.clearTimeout(panTimer);
+      window.clearTimeout(clearTimer);
+      if (panRafRef.current) cancelAnimationFrame(panRafRef.current);
+    };
   }, [levels.length]);
+
+  // Mirror pendingNextId into a ref so the setTimeout closure sees the latest
+  // value after the state has flushed.
+  const pendingNextIdRef = useRef<string | null>(null);
+  useEffect(() => { pendingNextIdRef.current = pendingNextId; }, [pendingNextId]);
 
   // Group by world
   const byWorld = new Map<number, LevelRow[]>();
@@ -80,6 +127,7 @@ function StoryMap() {
     arr.push(l);
     byWorld.set(l.world, arr);
   }
+
 
   // World N unlocks when every level of World N-1 has ≥1 star (any completion).
   // World 1 always unlocked. Worlds with zero authored levels stay "Coming soon".
@@ -147,6 +195,8 @@ function StoryMap() {
                     ring={w.ring}
                     chip={w.chip}
                     justClearedId={justClearedId}
+                    pendingNextId={pendingNextId}
+                    onCelebrationDone={() => setPendingNextId(null)}
                   />
 
                 )}
@@ -178,6 +228,8 @@ function LevelList({
   ring,
   chip,
   justClearedId,
+  pendingNextId,
+  onCelebrationDone,
 }: {
   worldLevels: LevelRow[];
   progress: Record<string, number>;
@@ -185,6 +237,8 @@ function LevelList({
   ring: string;
   chip: string;
   justClearedId: string | null;
+  pendingNextId: string | null;
+  onCelebrationDone: () => void;
 }) {
   // Preserve the linear-unlock rule: previous level in the original ordering
   // must be cleared, regardless of which tier group it renders under.
@@ -219,6 +273,8 @@ function LevelList({
       const cleared = stars > 0;
       const prevCleared = idx === 0 || clearedByIndex[idx - 1];
       const canPlay = unlocked && prevCleared;
+      const isPendingNext = pendingNextId === lvl.id;
+      const showPlay = canPlay && !isPendingNext;
       if (tierPos > 0) {
         const spotlight = !!justClearedId && prevLvlId === justClearedId;
         nodes.push(
@@ -227,6 +283,7 @@ function LevelList({
             active={prevCleared}
             direction={tierPos % 2 === 0 ? "right" : "left"}
             spotlight={spotlight}
+            onFinished={spotlight ? onCelebrationDone : undefined}
           />,
         );
       }
@@ -234,7 +291,7 @@ function LevelList({
       prevLvlId = lvl.id;
       const body = (
         <div className="flex items-center gap-3 p-3">
-          <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted`}>
+          <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted ${isPendingNext ? "animate-marker-pulse" : ""}`}>
             {canPlay ? (
               <img src={lvl.image_a_url} alt="" className="h-full w-full object-cover" loading="lazy" />
             ) : (
@@ -257,14 +314,24 @@ function LevelList({
               ))}
             </div>
           </div>
-          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${canPlay ? chip : "bg-muted text-muted-foreground"}`}>
-            {canPlay ? (cleared ? "Replay" : "Play") : "Locked"}
-          </span>
+          {showPlay ? (
+            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${chip} animate-fade-in`}>
+              {cleared ? "Replay" : "Play"}
+            </span>
+          ) : isPendingNext ? (
+            <span className="shrink-0 rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-primary">
+              Duck on the way…
+            </span>
+          ) : (
+            <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
+              Locked
+            </span>
+          )}
         </div>
       );
       nodes.push(
         <div key={lvl.id} id={`lvl-${lvl.id}`} className="border-t border-border first:border-t-0">
-          {canPlay ? (
+          {showPlay ? (
             <Link to="/play/$mode/$levelId" params={{ mode: "story", levelId: lvl.id }} className="block transition hover:bg-muted/50">
               {body}
             </Link>
@@ -287,11 +354,20 @@ function LevelList({
 // level cleared), footprints appear one-by-one along a curved path. When
 // `spotlight` is true (the user just cleared the level above), a duck holding
 // a magnifying glass walks along the same curve for ~3s.
-function PathConnector({ active, direction, spotlight = false }: { active: boolean; direction: "left" | "right"; spotlight?: boolean }) {
+function PathConnector({
+  active,
+  direction,
+  spotlight = false,
+  onFinished,
+}: {
+  active: boolean;
+  direction: "left" | "right";
+  spotlight?: boolean;
+  onFinished?: () => void;
+}) {
   const p0 = direction === "right" ? { x: 30, y: 18 } : { x: 290, y: 18 };
   const p2 = direction === "right" ? { x: 290, y: 18 } : { x: 30, y: 18 };
   const p1 = { x: 160, y: 92 };
-  const pathD = `M ${p0.x} ${p0.y} Q ${p1.x} ${p1.y} ${p2.x} ${p2.y}`;
 
   const STEPS = 9;
   const points = Array.from({ length: STEPS }, (_, i) => {
@@ -306,8 +382,28 @@ function PathConnector({ active, direction, spotlight = false }: { active: boole
   });
 
   return (
-    <div aria-hidden className={`relative w-full overflow-hidden ${spotlight ? "h-32" : "h-24"}`}>
-      <div className={`absolute inset-0 ${active || spotlight ? "bg-gradient-to-b from-sky-100/50 to-transparent dark:from-sky-500/10" : ""}`} />
+    <div aria-hidden className={`relative w-full overflow-hidden ${spotlight ? "h-40" : "h-24"}`}>
+      <div className={`absolute inset-0 ${active || spotlight ? "bg-gradient-to-b from-sky-100/60 via-sky-50/20 to-transparent dark:from-sky-500/10" : ""}`} />
+
+      {/* Ambient life during spotlight — butterflies, pollen motes. */}
+      {spotlight && (
+        <>
+          <span className="pointer-events-none absolute left-[6%] top-[38%] text-lg animate-butterfly" style={{ animationDelay: "0.3s" }}>🦋</span>
+          <span className="pointer-events-none absolute right-[8%] top-[54%] text-base animate-butterfly" style={{ animationDelay: "1.4s", animationDuration: "7s" }}>🦋</span>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span
+              key={i}
+              className="pointer-events-none absolute h-1.5 w-1.5 rounded-full bg-warning/70"
+              style={{
+                left: `${10 + i * 18}%`,
+                bottom: "10%",
+                animation: `pollen-float ${3 + i * 0.4}s ease-out ${i * 0.3}s infinite`,
+              }}
+            />
+          ))}
+        </>
+      )}
+
       <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
         {points.map((pt, i) => {
           const rad = (pt.angle * Math.PI) / 180;
@@ -337,29 +433,18 @@ function PathConnector({ active, direction, spotlight = false }: { active: boole
           );
         })}
 
-        {/* Duck-with-lens walks the path once when spotlighting the newly
-            unlocked next level. */}
-        {spotlight && (
-          <g>
-            <text fontSize="18" textAnchor="middle" dy="6">
-              🦆
-              <animateMotion dur="3s" repeatCount="1" fill="freeze" rotate="0" path={pathD} />
-            </text>
-            <text fontSize="12" textAnchor="middle" dy="-2" dx="8">
-              🔎
-              <animateMotion dur="3s" repeatCount="1" fill="freeze" rotate="0" path={pathD} />
-            </text>
-          </g>
-        )}
+        {spotlight && <DuckWalk p0={p0} p1={p1} p2={p2} onFinished={onFinished} />}
       </svg>
+
       <span className={`absolute top-1 left-[12%] text-2xl ${active || spotlight ? "opacity-90" : "opacity-40"} animate-cloud-drift`}>☁️</span>
       <span className={`absolute top-2 right-[14%] text-xl ${active || spotlight ? "opacity-80" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
       {spotlight && (
-        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow animate-fade-in">
-          Next level unlocked
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow animate-fade-in">
+          Next level unlocking…
         </span>
       )}
     </div>
   );
 }
+
 
