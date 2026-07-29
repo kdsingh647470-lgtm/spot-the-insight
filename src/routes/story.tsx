@@ -83,6 +83,13 @@ function StoryMap() {
     if (!id) return;
     setJustClearedId(id);
     try { sessionStorage.removeItem("story-just-cleared"); } catch {}
+    // Persist a guest-side clear so the next level unlocks even when signed out.
+    setGuestProgress((prev) => {
+      if ((prev[id!] ?? 0) >= 1) return prev;
+      const next = { ...prev, [id!]: Math.max(1, prev[id!] ?? 0) };
+      try { localStorage.setItem("story-guest-progress", JSON.stringify(next)); } catch {}
+      return next;
+    });
 
     // Find the next level in the same world (linear order).
     const cleared = levels.find((l) => l.id === id);
