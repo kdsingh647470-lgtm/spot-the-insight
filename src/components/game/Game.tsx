@@ -495,11 +495,7 @@ function GameInner({
                 <Button variant="secondary" className="w-full" onClick={() => reset()}>
                   <RotateCcw className="mr-1 h-4 w-4" /> Play again
                 </Button>
-                {cfg.allowNext && (
-                  <Button variant="ghost" className="w-full" onClick={skipToNext}>
-                    Proceed to next level →
-                  </Button>
-                )}
+                {/* Removed "Proceed to next level" — the map only advances on an actual clear. */}
                 <Button variant="ghost" className="w-full" onClick={() => navigate({ to: "/" })}>
                   <Home className="mr-1 h-4 w-4" /> Home
                 </Button>
