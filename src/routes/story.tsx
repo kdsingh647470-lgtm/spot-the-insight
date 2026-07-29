@@ -53,8 +53,20 @@ function StoryMap() {
     queryFn: () => getMyStoryProgress(),
     enabled: hasSession,
   });
-  const progress = progQ.data ?? {};
   const levels = (mapQ.data ?? []) as LevelRow[];
+
+  // Guest progress: without a session, the server has no completions to return,
+  // so the "next" level would stay locked forever after clearing one. Mirror
+  // clears into localStorage and merge them into the progress map so the
+  // linear-unlock rule still advances for signed-out players.
+  const [guestProgress, setGuestProgress] = useState<Record<string, number>>({});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("story-guest-progress");
+      if (raw) setGuestProgress(JSON.parse(raw));
+    } catch {}
+  }, []);
+  const progress: Record<string, number> = { ...guestProgress, ...(progQ.data ?? {}) };
 
   // Read the "just cleared" flag once data is ready. This kicks off the full
   // post-level cinematic: camera pan from the cleared node to the next node,
@@ -71,6 +83,13 @@ function StoryMap() {
     if (!id) return;
     setJustClearedId(id);
     try { sessionStorage.removeItem("story-just-cleared"); } catch {}
+    // Persist a guest-side clear so the next level unlocks even when signed out.
+    setGuestProgress((prev) => {
+      if ((prev[id!] ?? 0) >= 1) return prev;
+      const next = { ...prev, [id!]: Math.max(1, prev[id!] ?? 0) };
+      try { localStorage.setItem("story-guest-progress", JSON.stringify(next)); } catch {}
+      return next;
+    });
 
     // Find the next level in the same world (linear order).
     const cleared = levels.find((l) => l.id === id);
