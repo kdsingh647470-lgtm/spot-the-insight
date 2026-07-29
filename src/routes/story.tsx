@@ -261,6 +261,7 @@ function LevelList({
   chip,
   justClearedId,
   pendingNextId,
+  arrivedNextId,
   onCelebrationDone,
 }: {
   worldLevels: LevelRow[];
@@ -270,6 +271,7 @@ function LevelList({
   chip: string;
   justClearedId: string | null;
   pendingNextId: string | null;
+  arrivedNextId: string | null;
   onCelebrationDone: () => void;
 }) {
   // Preserve the linear-unlock rule: previous level in the original ordering
