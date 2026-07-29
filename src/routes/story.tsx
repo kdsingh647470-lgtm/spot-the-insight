@@ -132,9 +132,24 @@ function StoryMap() {
     }, 600);
 
     const clearTimer = window.setTimeout(() => setJustClearedId(null), 5200);
+    // Safety net: if the cleared level is the last of its tier, no
+    // PathConnector renders between it and the next tier's first level,
+    // so DuckDoneSignal never mounts and onCelebrationDone never fires.
+    // Force-unlock the Play button after the same total celebration window
+    // (~4.9s walk + 0.9s arrived chip) so progression never stalls.
+    const fallbackTimer = window.setTimeout(() => {
+      const id = pendingNextIdRef.current;
+      if (!id) return;
+      setArrivedNextId(id);
+      window.setTimeout(() => {
+        setArrivedNextId(null);
+        setPendingNextId(null);
+      }, 900);
+    }, 4900);
     return () => {
       window.clearTimeout(panTimer);
       window.clearTimeout(clearTimer);
+      window.clearTimeout(fallbackTimer);
       if (panRafRef.current) cancelAnimationFrame(panRafRef.current);
     };
   }, [levels.length]);
