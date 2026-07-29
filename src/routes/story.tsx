@@ -78,6 +78,7 @@ function StoryMap() {
   // until the celebration finishes.
   const [justClearedId, setJustClearedId] = useState<string | null>(null);
   const [pendingNextId, setPendingNextId] = useState<string | null>(null);
+  const [arrivedNextId, setArrivedNextId] = useState<string | null>(null);
   const panRafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -219,7 +220,15 @@ function StoryMap() {
                     chip={w.chip}
                     justClearedId={justClearedId}
                     pendingNextId={pendingNextId}
-                    onCelebrationDone={() => setPendingNextId(null)}
+                    arrivedNextId={arrivedNextId}
+                    onCelebrationDone={() => {
+                      const id = pendingNextIdRef.current;
+                      if (id) setArrivedNextId(id);
+                      window.setTimeout(() => {
+                        setArrivedNextId(null);
+                        setPendingNextId(null);
+                      }, 900);
+                    }}
                   />
 
                 )}
@@ -252,6 +261,7 @@ function LevelList({
   chip,
   justClearedId,
   pendingNextId,
+  arrivedNextId,
   onCelebrationDone,
 }: {
   worldLevels: LevelRow[];
@@ -261,6 +271,7 @@ function LevelList({
   chip: string;
   justClearedId: string | null;
   pendingNextId: string | null;
+  arrivedNextId: string | null;
   onCelebrationDone: () => void;
 }) {
   // Preserve the linear-unlock rule: previous level in the original ordering
@@ -297,10 +308,12 @@ function LevelList({
       const prevCleared = idx === 0 || clearedByIndex[idx - 1];
       const canPlay = unlocked && prevCleared;
       const isPendingNext = pendingNextId === lvl.id;
+      const isArrivedNext = arrivedNextId === lvl.id;
       const showPlay = canPlay && !isPendingNext;
       if (tierPos > 0) {
         const spotlight = !!justClearedId && prevLvlId === justClearedId;
-        const celebrating = spotlight && !!pendingNextId;
+        const celebrating = spotlight && !!pendingNextId && !arrivedNextId;
+        const arrived = spotlight && !!arrivedNextId;
         nodes.push(
           <PathConnector
             key={`path-${lvl.id}`}
@@ -308,6 +321,7 @@ function LevelList({
             direction={tierPos % 2 === 0 ? "right" : "left"}
             spotlight={spotlight}
             celebrating={celebrating}
+            arrived={arrived}
             onFinished={spotlight ? onCelebrationDone : undefined}
           />,
         );
@@ -342,6 +356,10 @@ function LevelList({
           {showPlay ? (
             <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${chip} animate-fade-in`}>
               {cleared ? "Replay" : "Play"}
+            </span>
+          ) : isArrivedNext ? (
+            <span className="shrink-0 rounded-full bg-success/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-success animate-fade-in">
+              Duck arrived!
             </span>
           ) : isPendingNext ? (
             <span className="shrink-0 rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-primary">
@@ -384,12 +402,14 @@ function PathConnector({
   direction,
   spotlight = false,
   celebrating = false,
+  arrived = false,
   onFinished,
 }: {
   active: boolean;
   direction: "left" | "right";
   spotlight?: boolean;
   celebrating?: boolean;
+  arrived?: boolean;
   onFinished?: () => void;
 }) {
   // Vertical path — duck walks from the previous (top) level DOWN to the
@@ -472,11 +492,12 @@ function PathConnector({
           Duck arriving…
         </span>
       )}
-      {spotlight && !celebrating && (
-        // Fires the finished callback once celebration ends — kept out of the
-        // SVG tree so DuckWalk's own timing drives when Play appears.
-        <DuckDoneSignal onFinished={onFinished} />
+      {arrived && (
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-success px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-success-foreground shadow animate-fade-in">
+          Duck arrived!
+        </span>
       )}
+      {spotlight && <DuckDoneSignal onFinished={onFinished} />}
     </div>
   );
 }
