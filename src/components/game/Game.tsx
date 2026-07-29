@@ -190,6 +190,21 @@ function GameInner({
   useEffect(() => { supabase.auth.getSession().then(({ data }) => setSession(data.session)); }, []);
   useEffect(() => { setTransform(IDENTITY); }, [data.id]);
   useEffect(() => { saveResume({ mode, levelId: data.id, title: data.title, savedAt: Date.now() }); }, [mode, data.id, data.title]);
+  // Home → Resume opens the level with ?resume=1 so the player is gated by
+  // the same "out of lives" choice (Watch ad · Home) before continuing.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("resume") === "1") {
+      setShowResult("lose");
+      setPaused(true);
+      // Clean the URL so a refresh doesn't re-trigger the gate.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("resume");
+      window.history.replaceState({}, "", url.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Timer tick
   useEffect(() => {
