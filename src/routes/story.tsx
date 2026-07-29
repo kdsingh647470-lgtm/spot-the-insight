@@ -61,8 +61,12 @@ function StoryMap() {
   // linear-unlock rule still advances for signed-out players.
   const [guestProgress, setGuestProgress] = useState<Record<string, number>>({});
   useEffect(() => {
+    // v2 key: the old "story-guest-progress" cache could contain entries
+    // saved by a prior "skip to next" flow that treated skips as clears.
+    // Drop that stale cache so uncleared levels stop appearing unlocked.
+    try { localStorage.removeItem("story-guest-progress"); } catch {}
     try {
-      const raw = localStorage.getItem("story-guest-progress");
+      const raw = localStorage.getItem("story-guest-progress-v2");
       if (raw) setGuestProgress(JSON.parse(raw));
     } catch {}
   }, []);
@@ -87,7 +91,7 @@ function StoryMap() {
     setGuestProgress((prev) => {
       if ((prev[id!] ?? 0) >= 1) return prev;
       const next = { ...prev, [id!]: Math.max(1, prev[id!] ?? 0) };
-      try { localStorage.setItem("story-guest-progress", JSON.stringify(next)); } catch {}
+      try { localStorage.setItem("story-guest-progress-v2", JSON.stringify(next)); } catch {}
       return next;
     });
 
