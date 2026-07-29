@@ -300,12 +300,14 @@ function LevelList({
       const showPlay = canPlay && !isPendingNext;
       if (tierPos > 0) {
         const spotlight = !!justClearedId && prevLvlId === justClearedId;
+        const celebrating = spotlight && !!pendingNextId;
         nodes.push(
           <PathConnector
             key={`path-${lvl.id}`}
             active={prevCleared}
             direction={tierPos % 2 === 0 ? "right" : "left"}
             spotlight={spotlight}
+            celebrating={celebrating}
             onFinished={spotlight ? onCelebrationDone : undefined}
           />,
         );
