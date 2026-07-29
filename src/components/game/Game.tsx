@@ -434,7 +434,7 @@ function GameInner({
             <span className="text-muted-foreground">· Lv {run.levels + 1}</span>
           )}
         </div>
-        <Button variant="ghost" onClick={reset}><RotateCcw className="mr-1 h-4 w-4" /> Restart</Button>
+        <Button variant="ghost" onClick={() => reset()}><RotateCcw className="mr-1 h-4 w-4" /> Restart</Button>
       </div>
 
       <AnimatePresence>
