@@ -140,8 +140,11 @@ export function Game({ mode, levelId: initialLevelId }: { mode: Mode; levelId?: 
         setRunLevels((n) => n + 1);
       }}
       onLivesChange={(l) => { if (cfg.livesPersist) setRunLives(l); }}
-      onOutOfLives={() => setRunOver("lives")}
-      onOutOfTime={() => setRunOver("time")}
+      // Story/daily/relax don't have run state — keep the loss inside the level
+      // so the player sees the Play again / Watch ad / Home choices, instead of
+      // being kicked to the "Run over" screen.
+      onOutOfLives={() => { if (cfg.livesPersist) setRunOver("lives"); }}
+      onOutOfTime={() => { if (cfg.timePersist) setRunOver("time"); }}
       onNext={pickNext}
     />
   );
