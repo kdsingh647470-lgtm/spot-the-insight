@@ -78,6 +78,7 @@ function StoryMap() {
   // until the celebration finishes.
   const [justClearedId, setJustClearedId] = useState<string | null>(null);
   const [pendingNextId, setPendingNextId] = useState<string | null>(null);
+  const [arrivedNextId, setArrivedNextId] = useState<string | null>(null);
   const panRafRef = useRef<number | null>(null);
 
   useEffect(() => {
