@@ -91,7 +91,7 @@ function StoryMap() {
     setGuestProgress((prev) => {
       if ((prev[id!] ?? 0) >= 1) return prev;
       const next = { ...prev, [id!]: Math.max(1, prev[id!] ?? 0) };
-      try { localStorage.setItem("story-guest-progress", JSON.stringify(next)); } catch {}
+      try { localStorage.setItem("story-guest-progress-v2", JSON.stringify(next)); } catch {}
       return next;
     });
 
