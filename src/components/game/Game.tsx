@@ -323,11 +323,41 @@ function GameInner({
     setTimeout(() => setHintTarget(null), 1500);
   }
 
-  function reset() {
-    setFound([]); setLives(cfg.startingLives); setHints(0); setMistakes(0); setElapsed(0);
+  function reset(opts?: { bonusLives?: number }) {
+    setFound([]);
+    setLives((cfg.startingLives ?? 0) + (opts?.bonusLives ?? 0) || cfg.startingLives);
+    setHints(0); setMistakes(0); setElapsed(0);
     setTimeLeft(cfg.startingTime); setLevelScore(0);
     setCombo(0); setBestCombo(0); setComboPop(null);
     setShowResult(null); startRef.current = Date.now();
+  }
+
+  // Ad-gated retry: show a short simulated ad, then reset with bonus lives so
+  // the player has a real shot at clearing the level.
+  const [adOpen, setAdOpen] = useState(false);
+  const [adSecs, setAdSecs] = useState(5);
+  useEffect(() => {
+    if (!adOpen) return;
+    setAdSecs(5);
+    const t = setInterval(() => setAdSecs((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [adOpen]);
+  function watchAdAndRetry() {
+    setAdOpen(true);
+  }
+  function finishAd() {
+    setAdOpen(false);
+    reset({ bonusLives: 2 });
+  }
+
+  // "Proceed to next level" from the lose screen: skip current without a clear
+  // reward. In story mode, mirror the skip so the map's linear-unlock rule
+  // advances (guest progress + sessionStorage flag).
+  function skipToNext() {
+    if (mode === "story" && typeof window !== "undefined") {
+      try { sessionStorage.setItem("story-just-cleared", data.id); } catch {}
+    }
+    onNext();
   }
 
   const stars = mistakes === 0 && hints === 0 ? 3 : mistakes <= 1 ? 2 : 1;
