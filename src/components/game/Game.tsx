@@ -353,15 +353,7 @@ function GameInner({
     reset({ bonusLives: 2 });
   }
 
-  // "Proceed to next level" from the lose screen: skip current without a clear
-  // reward. In story mode, mirror the skip so the map's linear-unlock rule
-  // advances (guest progress + sessionStorage flag).
-  function skipToNext() {
-    if (mode === "story" && typeof window !== "undefined") {
-      try { sessionStorage.setItem("story-just-cleared", data.id); } catch {}
-    }
-    onNext();
-  }
+  // No "skip to next" — the map only advances on an actual clear.
 
   const stars = mistakes === 0 && hints === 0 ? 3 : mistakes <= 1 ? 2 : 1;
   const totalScore = (cfg.scorePersist ? run.score : 0) + levelScore;
