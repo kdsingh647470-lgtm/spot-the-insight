@@ -190,15 +190,20 @@ function GameInner({
   useEffect(() => { supabase.auth.getSession().then(({ data }) => setSession(data.session)); }, []);
   useEffect(() => { setTransform(IDENTITY); }, [data.id]);
   useEffect(() => { saveResume({ mode, levelId: data.id, title: data.title, savedAt: Date.now() }); }, [mode, data.id, data.title]);
-  // Home → Resume opens the level with ?resume=1 so the player is gated by
-  // the same "out of lives" choice (Watch ad · Home) before continuing.
+  // Home → Resume opens the level with ?resume=1. Only gate behind the
+  // "out of lives" ad modal when this specific level was actually played
+  // but not finished (an in-progress marker exists). A brand-new level
+  // opens directly into gameplay.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("resume") === "1") {
-      setShowResult("lose");
-      setPaused(true);
-      // Clean the URL so a refresh doesn't re-trigger the gate.
+      let inProgress = false;
+      try { inProgress = localStorage.getItem(`game-inprogress-${data.id}`) === "1"; } catch {}
+      if (inProgress) {
+        setShowResult("lose");
+        setPaused(true);
+      }
       const url = new URL(window.location.href);
       url.searchParams.delete("resume");
       window.history.replaceState({}, "", url.toString());
@@ -269,6 +274,7 @@ function GameInner({
 
     if (hit) {
       playBeep(880, 0.12, "triangle");
+      try { localStorage.setItem(`game-inprogress-${data.id}`, "1"); } catch {}
       const nf = [...found, { id: hit.id, x: hit.x, y: hit.y }];
       setFound(nf);
       const newCombo = combo + 1;
@@ -280,6 +286,7 @@ function GameInner({
       setComboPop({ n: newCombo, gain, k: Date.now() });
       if (newCombo >= 2) playBeep(1100 + newCombo * 60, 0.08, "triangle");
       if (nf.length >= totalDiffs) {
+        try { localStorage.removeItem(`game-inprogress-${data.id}`); } catch {}
         const timeUsed = Math.floor((Date.now() - startRef.current) / 1000);
         const remainingTime = cfg.timer === "down" ? Math.max(0, run.timeRemaining - timeUsed) : 0;
         setShowResult("win");
@@ -306,6 +313,7 @@ function GameInner({
       }
     } else {
       playBeep(180, 0.15, "square");
+      try { localStorage.setItem(`game-inprogress-${data.id}`, "1"); } catch {}
       setWrong({ x: px, y: py, k: Date.now() });
       setShakeKey((k) => k + 1);
       setMistakes((m) => m + 1);
