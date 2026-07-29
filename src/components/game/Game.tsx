@@ -323,11 +323,41 @@ function GameInner({
     setTimeout(() => setHintTarget(null), 1500);
   }
 
-  function reset() {
-    setFound([]); setLives(cfg.startingLives); setHints(0); setMistakes(0); setElapsed(0);
+  function reset(opts?: { bonusLives?: number }) {
+    setFound([]);
+    setLives((cfg.startingLives ?? 0) + (opts?.bonusLives ?? 0) || cfg.startingLives);
+    setHints(0); setMistakes(0); setElapsed(0);
     setTimeLeft(cfg.startingTime); setLevelScore(0);
     setCombo(0); setBestCombo(0); setComboPop(null);
     setShowResult(null); startRef.current = Date.now();
+  }
+
+  // Ad-gated retry: show a short simulated ad, then reset with bonus lives so
+  // the player has a real shot at clearing the level.
+  const [adOpen, setAdOpen] = useState(false);
+  const [adSecs, setAdSecs] = useState(5);
+  useEffect(() => {
+    if (!adOpen) return;
+    setAdSecs(5);
+    const t = setInterval(() => setAdSecs((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [adOpen]);
+  function watchAdAndRetry() {
+    setAdOpen(true);
+  }
+  function finishAd() {
+    setAdOpen(false);
+    reset({ bonusLives: 2 });
+  }
+
+  // "Proceed to next level" from the lose screen: skip current without a clear
+  // reward. In story mode, mirror the skip so the map's linear-unlock rule
+  // advances (guest progress + sessionStorage flag).
+  function skipToNext() {
+    if (mode === "story" && typeof window !== "undefined") {
+      try { sessionStorage.setItem("story-just-cleared", data.id); } catch {}
+    }
+    onNext();
   }
 
   const stars = mistakes === 0 && hints === 0 ? 3 : mistakes <= 1 ? 2 : 1;
@@ -404,7 +434,7 @@ function GameInner({
             <span className="text-muted-foreground">· Lv {run.levels + 1}</span>
           )}
         </div>
-        <Button variant="ghost" onClick={reset}><RotateCcw className="mr-1 h-4 w-4" /> Restart</Button>
+        <Button variant="ghost" onClick={() => reset()}><RotateCcw className="mr-1 h-4 w-4" /> Restart</Button>
       </div>
 
       <AnimatePresence>
@@ -453,21 +483,57 @@ function GameInner({
             </div>
           </ModalCard>
         )}
-        {showResult === "lose" && (
+        {showResult === "lose" && !adOpen && (
           <ModalCard>
             <div className="text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/20 text-destructive">
                 <X className="h-8 w-8" />
               </div>
               <h2 className="mt-3 text-2xl font-black">Out of {cfg.timer === "down" ? "time" : "lives"}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">You found {found.length} of {totalDiffs} differences.</p>
-              <div className="mt-5 flex gap-2">
-                <Button className="flex-1" onClick={reset}><RotateCcw className="mr-1 h-4 w-4" /> Retry</Button>
-                <Button variant="secondary" onClick={() => navigate({ to: "/" })}>Home</Button>
+              <p className="mt-1 text-sm text-muted-foreground">
+                You found {found.length} of {totalDiffs} differences. Pick how to continue:
+              </p>
+              <div className="mt-5 flex flex-col gap-2">
+                <Button className="w-full" onClick={watchAdAndRetry}>
+                  <Play className="mr-1 h-4 w-4" /> Watch ad · Replay to clear (+2 lives)
+                </Button>
+                <Button variant="secondary" className="w-full" onClick={() => reset()}>
+                  <RotateCcw className="mr-1 h-4 w-4" /> Play again
+                </Button>
+                {cfg.allowNext && (
+                  <Button variant="ghost" className="w-full" onClick={skipToNext}>
+                    Proceed to next level →
+                  </Button>
+                )}
+                <Button variant="ghost" className="w-full" onClick={() => navigate({ to: "/" })}>
+                  <Home className="mr-1 h-4 w-4" /> Home
+                </Button>
               </div>
             </div>
           </ModalCard>
         )}
+        {adOpen && (
+          <ModalCard>
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
+                <Play className="h-8 w-8" />
+              </div>
+              <h2 className="mt-3 text-xl font-black">Sponsored break</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Thanks for supporting the game. Your replay unlocks in a moment.
+              </p>
+              <div className="mt-4 flex h-32 items-center justify-center rounded-2xl border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
+                Ad placeholder
+              </div>
+              <div className="mt-4">
+                <Button className="w-full" disabled={adSecs > 0} onClick={finishAd}>
+                  {adSecs > 0 ? `Skip in ${adSecs}s` : "Continue"}
+                </Button>
+              </div>
+            </div>
+          </ModalCard>
+        )}
+
       </AnimatePresence>
     </div>
   );
