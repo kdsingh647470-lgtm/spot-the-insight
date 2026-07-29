@@ -220,7 +220,15 @@ function StoryMap() {
                     chip={w.chip}
                     justClearedId={justClearedId}
                     pendingNextId={pendingNextId}
-                    onCelebrationDone={() => setPendingNextId(null)}
+                    arrivedNextId={arrivedNextId}
+                    onCelebrationDone={() => {
+                      const id = pendingNextIdRef.current;
+                      if (id) setArrivedNextId(id);
+                      window.setTimeout(() => {
+                        setArrivedNextId(null);
+                        setPendingNextId(null);
+                      }, 900);
+                    }}
                   />
 
                 )}
