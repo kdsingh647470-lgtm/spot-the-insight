@@ -274,6 +274,7 @@ function GameInner({
 
     if (hit) {
       playBeep(880, 0.12, "triangle");
+      try { localStorage.setItem(`game-inprogress-${data.id}`, "1"); } catch {}
       const nf = [...found, { id: hit.id, x: hit.x, y: hit.y }];
       setFound(nf);
       const newCombo = combo + 1;
@@ -285,6 +286,7 @@ function GameInner({
       setComboPop({ n: newCombo, gain, k: Date.now() });
       if (newCombo >= 2) playBeep(1100 + newCombo * 60, 0.08, "triangle");
       if (nf.length >= totalDiffs) {
+        try { localStorage.removeItem(`game-inprogress-${data.id}`); } catch {}
         const timeUsed = Math.floor((Date.now() - startRef.current) / 1000);
         const remainingTime = cfg.timer === "down" ? Math.max(0, run.timeRemaining - timeUsed) : 0;
         setShowResult("win");
