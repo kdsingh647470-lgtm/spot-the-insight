@@ -492,11 +492,12 @@ function PathConnector({
           Duck arriving…
         </span>
       )}
-      {spotlight && !celebrating && (
-        // Fires the finished callback once celebration ends — kept out of the
-        // SVG tree so DuckWalk's own timing drives when Play appears.
-        <DuckDoneSignal onFinished={onFinished} />
+      {arrived && (
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-success px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-success-foreground shadow animate-fade-in">
+          Duck arrived!
+        </span>
       )}
+      {spotlight && <DuckDoneSignal onFinished={onFinished} />}
     </div>
   );
 }
