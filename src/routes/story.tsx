@@ -392,9 +392,13 @@ function PathConnector({
   celebrating?: boolean;
   onFinished?: () => void;
 }) {
-  const p0 = direction === "right" ? { x: 30, y: 18 } : { x: 290, y: 18 };
-  const p2 = direction === "right" ? { x: 290, y: 18 } : { x: 30, y: 18 };
-  const p1 = { x: 160, y: 92 };
+  // Vertical path — duck walks from the previous (top) level DOWN to the
+  // next (bottom) level, matching the top-to-bottom list layout. The
+  // control point offsets sideways so the trail gently curves left/right
+  // between rows instead of being a straight line.
+  const p0 = { x: 48, y: 8 };
+  const p2 = { x: 48, y: 152 };
+  const p1 = { x: direction === "right" ? 82 : 14, y: 80 };
 
   const STEPS = 9;
   const points = Array.from({ length: STEPS }, (_, i) => {
@@ -409,20 +413,20 @@ function PathConnector({
   });
 
   return (
-    <div aria-hidden className={`relative w-full overflow-hidden ${spotlight ? "h-40" : "h-24"}`}>
+    <div aria-hidden className={`relative mx-auto w-24 overflow-hidden ${spotlight ? "h-48" : "h-32"}`}>
       <div className={`absolute inset-0 ${active || spotlight ? "bg-gradient-to-b from-sky-100/60 via-sky-50/20 to-transparent dark:from-sky-500/10" : ""}`} />
 
       {/* Ambient life during spotlight — butterflies, pollen motes. */}
       {spotlight && (
         <>
-          <span className="pointer-events-none absolute left-[6%] top-[38%] text-lg animate-butterfly" style={{ animationDelay: "0.3s" }}>🦋</span>
-          <span className="pointer-events-none absolute right-[8%] top-[54%] text-base animate-butterfly" style={{ animationDelay: "1.4s", animationDuration: "7s" }}>🦋</span>
+          <span className="pointer-events-none absolute left-[6%] top-[24%] text-lg animate-butterfly" style={{ animationDelay: "0.3s" }}>🦋</span>
+          <span className="pointer-events-none absolute right-[8%] top-[62%] text-base animate-butterfly" style={{ animationDelay: "1.4s", animationDuration: "7s" }}>🦋</span>
           {[0, 1, 2, 3, 4].map((i) => (
             <span
               key={i}
               className="pointer-events-none absolute h-1.5 w-1.5 rounded-full bg-warning/70"
               style={{
-                left: `${10 + i * 18}%`,
+                left: `${18 + i * 12}%`,
                 bottom: "10%",
                 animation: `pollen-float ${3 + i * 0.4}s ease-out ${i * 0.3}s infinite`,
               }}
@@ -431,11 +435,11 @@ function PathConnector({
         </>
       )}
 
-      <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+      <svg viewBox="0 0 96 160" preserveAspectRatio="xMidYMid meet" className="absolute inset-0 h-full w-full">
         {points.map((pt, i) => {
           const rad = (pt.angle * Math.PI) / 180;
-          const nx = -Math.sin(rad) * 6 * pt.side;
-          const ny =  Math.cos(rad) * 6 * pt.side;
+          const nx = -Math.sin(rad) * 5 * pt.side;
+          const ny =  Math.cos(rad) * 5 * pt.side;
           const rot = pt.angle + (pt.side > 0 ? 12 : -12);
           const showPrint = active || spotlight;
           return (
@@ -447,31 +451,44 @@ function PathConnector({
             >
               {showPrint ? (
                 <>
-                  <ellipse rx="3.2" ry="4.2" cy="1.5" className="fill-primary" />
-                  <circle r="1.2" cx="-2.2" cy="-3.5" className="fill-primary" />
-                  <circle r="1"   cx="-0.6" cy="-4.6" className="fill-primary" />
-                  <circle r="1"   cx="1"    cy="-4.6" className="fill-primary" />
-                  <circle r="1"   cx="2.4"  cy="-3.6" className="fill-primary" />
+                  <ellipse rx="2.6" ry="3.4" cy="1.2" className="fill-primary" />
+                  <circle r="1" cx="-1.8" cy="-2.8" className="fill-primary" />
+                  <circle r="0.8" cx="-0.5" cy="-3.7" className="fill-primary" />
+                  <circle r="0.8" cx="0.8" cy="-3.7" className="fill-primary" />
+                  <circle r="0.8" cx="2"    cy="-2.9" className="fill-primary" />
                 </>
               ) : (
-                <circle r="1.6" className="fill-muted-foreground/30" />
+                <circle r="1.3" className="fill-muted-foreground/30" />
               )}
             </g>
           );
         })}
 
-        {spotlight && <DuckWalk p0={p0} p1={p1} p2={p2} onFinished={onFinished} />}
+        {spotlight && <DuckWalk p0={p0} p1={p1} p2={p2} />}
       </svg>
 
-      <span className={`absolute top-1 left-[12%] text-2xl ${active || spotlight ? "opacity-90" : "opacity-40"} animate-cloud-drift`}>☁️</span>
-      <span className={`absolute top-2 right-[14%] text-xl ${active || spotlight ? "opacity-80" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
       {celebrating && (
-        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow animate-fade-in">
-          Next level unlocking…
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-primary-foreground shadow animate-fade-in">
+          Duck arriving…
         </span>
+      )}
+      {spotlight && !celebrating && (
+        // Fires the finished callback once celebration ends — kept out of the
+        // SVG tree so DuckWalk's own timing drives when Play appears.
+        <DuckDoneSignal onFinished={onFinished} />
       )}
     </div>
   );
+}
+
+function DuckDoneSignal({ onFinished }: { onFinished?: () => void }) {
+  useEffect(() => {
+    if (!onFinished) return;
+    // DuckWalk default = 3800ms walk + ~1050ms celebration ≈ 4900ms.
+    const t = window.setTimeout(() => onFinished(), 4900);
+    return () => window.clearTimeout(t);
+  }, [onFinished]);
+  return null;
 }
 
 
