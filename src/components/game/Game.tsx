@@ -190,6 +190,21 @@ function GameInner({
   useEffect(() => { supabase.auth.getSession().then(({ data }) => setSession(data.session)); }, []);
   useEffect(() => { setTransform(IDENTITY); }, [data.id]);
   useEffect(() => { saveResume({ mode, levelId: data.id, title: data.title, savedAt: Date.now() }); }, [mode, data.id, data.title]);
+  // Home → Resume opens the level with ?resume=1 so the player is gated by
+  // the same "out of lives" choice (Watch ad · Home) before continuing.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("resume") === "1") {
+      setShowResult("lose");
+      setPaused(true);
+      // Clean the URL so a refresh doesn't re-trigger the gate.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("resume");
+      window.history.replaceState({}, "", url.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Timer tick
   useEffect(() => {
@@ -332,7 +347,7 @@ function GameInner({
     setHints(0); setMistakes(0); setElapsed(0);
     setTimeLeft(cfg.startingTime); setLevelScore(0);
     setCombo(0); setBestCombo(0); setComboPop(null);
-    setShowResult(null); startRef.current = Date.now();
+    setShowResult(null); setPaused(false); startRef.current = Date.now();
   }
 
   // Ad-gated retry: show a short simulated ad, then reset with bonus lives so
@@ -492,10 +507,6 @@ function GameInner({
                 <Button className="w-full" onClick={watchAdAndRetry}>
                   <Play className="mr-1 h-4 w-4" /> Watch ad · Replay to clear (+2 lives)
                 </Button>
-                <Button variant="secondary" className="w-full" onClick={() => reset()}>
-                  <RotateCcw className="mr-1 h-4 w-4" /> Play again
-                </Button>
-                {/* Removed "Proceed to next level" — the map only advances on an actual clear. */}
                 <Button variant="ghost" className="w-full" onClick={() => navigate({ to: "/" })}>
                   <Home className="mr-1 h-4 w-4" /> Home
                 </Button>

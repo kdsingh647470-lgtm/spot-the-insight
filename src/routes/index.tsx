@@ -81,6 +81,7 @@ function Home() {
             <Link
               to="/play/$mode/$levelId"
               params={{ mode: resume.mode, levelId: resume.levelId }}
+              search={{ resume: "1" }}
               className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-soft"
             >
               Resume
