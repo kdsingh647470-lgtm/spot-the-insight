@@ -190,15 +190,20 @@ function GameInner({
   useEffect(() => { supabase.auth.getSession().then(({ data }) => setSession(data.session)); }, []);
   useEffect(() => { setTransform(IDENTITY); }, [data.id]);
   useEffect(() => { saveResume({ mode, levelId: data.id, title: data.title, savedAt: Date.now() }); }, [mode, data.id, data.title]);
-  // Home → Resume opens the level with ?resume=1 so the player is gated by
-  // the same "out of lives" choice (Watch ad · Home) before continuing.
+  // Home → Resume opens the level with ?resume=1. Only gate behind the
+  // "out of lives" ad modal when this specific level was actually played
+  // but not finished (an in-progress marker exists). A brand-new level
+  // opens directly into gameplay.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("resume") === "1") {
-      setShowResult("lose");
-      setPaused(true);
-      // Clean the URL so a refresh doesn't re-trigger the gate.
+      let inProgress = false;
+      try { inProgress = localStorage.getItem(`game-inprogress-${data.id}`) === "1"; } catch {}
+      if (inProgress) {
+        setShowResult("lose");
+        setPaused(true);
+      }
       const url = new URL(window.location.href);
       url.searchParams.delete("resume");
       window.history.replaceState({}, "", url.toString());
