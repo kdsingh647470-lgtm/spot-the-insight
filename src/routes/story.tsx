@@ -357,6 +357,10 @@ function LevelList({
             <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${chip} animate-fade-in`}>
               {cleared ? "Replay" : "Play"}
             </span>
+          ) : isArrivedNext ? (
+            <span className="shrink-0 rounded-full bg-success/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-success animate-fade-in">
+              Duck arrived!
+            </span>
           ) : isPendingNext ? (
             <span className="shrink-0 rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-primary">
               Duck on the way…
