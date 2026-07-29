@@ -347,7 +347,7 @@ function GameInner({
     setHints(0); setMistakes(0); setElapsed(0);
     setTimeLeft(cfg.startingTime); setLevelScore(0);
     setCombo(0); setBestCombo(0); setComboPop(null);
-    setShowResult(null); startRef.current = Date.now();
+    setShowResult(null); setPaused(false); startRef.current = Date.now();
   }
 
   // Ad-gated retry: show a short simulated ad, then reset with bonus lives so
