@@ -402,12 +402,14 @@ function PathConnector({
   direction,
   spotlight = false,
   celebrating = false,
+  arrived = false,
   onFinished,
 }: {
   active: boolean;
   direction: "left" | "right";
   spotlight?: boolean;
   celebrating?: boolean;
+  arrived?: boolean;
   onFinished?: () => void;
 }) {
   // Vertical path — duck walks from the previous (top) level DOWN to the
