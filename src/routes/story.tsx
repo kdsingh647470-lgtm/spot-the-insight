@@ -383,11 +383,13 @@ function PathConnector({
   active,
   direction,
   spotlight = false,
+  celebrating = false,
   onFinished,
 }: {
   active: boolean;
   direction: "left" | "right";
   spotlight?: boolean;
+  celebrating?: boolean;
   onFinished?: () => void;
 }) {
   const p0 = direction === "right" ? { x: 30, y: 18 } : { x: 290, y: 18 };
@@ -463,7 +465,7 @@ function PathConnector({
 
       <span className={`absolute top-1 left-[12%] text-2xl ${active || spotlight ? "opacity-90" : "opacity-40"} animate-cloud-drift`}>☁️</span>
       <span className={`absolute top-2 right-[14%] text-xl ${active || spotlight ? "opacity-80" : "opacity-30"} animate-cloud-drift-slow`}>☁️</span>
-      {spotlight && (
+      {celebrating && (
         <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow animate-fade-in">
           Next level unlocking…
         </span>
