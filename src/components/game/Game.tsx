@@ -313,6 +313,7 @@ function GameInner({
       }
     } else {
       playBeep(180, 0.15, "square");
+      try { localStorage.setItem(`game-inprogress-${data.id}`, "1"); } catch {}
       setWrong({ x: px, y: py, k: Date.now() });
       setShakeKey((k) => k + 1);
       setMistakes((m) => m + 1);
