@@ -308,10 +308,12 @@ function LevelList({
       const prevCleared = idx === 0 || clearedByIndex[idx - 1];
       const canPlay = unlocked && prevCleared;
       const isPendingNext = pendingNextId === lvl.id;
+      const isArrivedNext = arrivedNextId === lvl.id;
       const showPlay = canPlay && !isPendingNext;
       if (tierPos > 0) {
         const spotlight = !!justClearedId && prevLvlId === justClearedId;
-        const celebrating = spotlight && !!pendingNextId;
+        const celebrating = spotlight && !!pendingNextId && !arrivedNextId;
+        const arrived = spotlight && !!arrivedNextId;
         nodes.push(
           <PathConnector
             key={`path-${lvl.id}`}
@@ -319,6 +321,7 @@ function LevelList({
             direction={tierPos % 2 === 0 ? "right" : "left"}
             spotlight={spotlight}
             celebrating={celebrating}
+            arrived={arrived}
             onFinished={spotlight ? onCelebrationDone : undefined}
           />,
         );
