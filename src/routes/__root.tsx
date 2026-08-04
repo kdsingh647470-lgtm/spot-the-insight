@@ -120,6 +120,17 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => { initTheme(); }, []);
+  // Load AdSense only after hydration — the auto-ads script injects <ins>
+  // elements into <body>, which breaks SSR hydration if loaded from <head>.
+  useEffect(() => {
+    if (document.querySelector('script[data-adsense="1"]')) return;
+    const s = document.createElement("script");
+    s.async = true;
+    s.crossOrigin = "anonymous";
+    s.dataset.adsense = "1";
+    s.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5308295667973900";
+    document.head.appendChild(s);
+  }, []);
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
