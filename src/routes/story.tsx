@@ -5,7 +5,6 @@ import { Lock, Star, Sparkles, Home as HomeIcon, Trophy, Check } from "lucide-re
 import { AppHeader } from "@/components/AppHeader";
 import { AppFooter } from "@/components/AppFooter";
 import { AdSlot } from "@/components/AdSlot";
-import { DuckWalk } from "@/components/story/DuckWalk";
 import { getStoryMap, getMyStoryProgress } from "@/lib/levels.functions";
 import { supabase } from "@/integrations/supabase/client";
 
