@@ -373,12 +373,10 @@ function LevelList({
           <div className={`mt-1 truncate text-center text-[10px] font-semibold ${canPlay ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
             {lvl.title}
           </div>
-        </div>,
-      );
-
-      rendered++;
-    }
-    flushTiles(`grid-tail-${tier.key}`);
+      </div>,
+    );
+  }
+  flushTiles(`grid-tail-${tier.key}`);
   }
 
   // `chip` is retained for theme parity with the world header.
