@@ -378,10 +378,6 @@ function LevelList({
       );
 
       rendered++;
-      if (rendered % 8 === 0) {
-        flushTiles(`grid-${lvl.id}`);
-        nodes.push(<AdSlot key={`ad-${lvl.id}`} />);
-      }
     }
     flushTiles(`grid-tail-${tier.key}`);
   }
