@@ -258,7 +258,7 @@ function StoryMap() {
 
 // ---------------------------------------------------------------------------
 // LevelList: groups a world's levels by difficulty tier (Easy / Intermediate
-// / Hard) and injects an AdSlot after every 2 rendered level cards.
+// / Hard) and renders them in a compact grid.
 // ---------------------------------------------------------------------------
 
 const TIERS: { key: string; label: string; min: number; max: number; badge: string }[] = [
