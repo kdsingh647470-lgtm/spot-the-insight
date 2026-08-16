@@ -274,10 +274,8 @@ function LevelList({
   unlocked,
   ring,
   chip,
-  justClearedId,
   pendingNextId,
   arrivedNextId,
-  onCelebrationDone,
 }: {
   worldLevels: LevelRow[];
   progress: Record<string, number>;
@@ -293,10 +291,9 @@ function LevelList({
   // must be cleared, regardless of which tier group it renders under.
   const clearedByIndex = worldLevels.map((lvl) => (progress[lvl.id] ?? 0) >= 1);
 
-  // Track how many level cards we've rendered across all tiers so a single
-  // ad rhythm (one ad after every 2 levels) spans the whole world.
+  // Compact grid layout: 4 tiles per row so a whole world fits on one or two
+  // screens, with an ad after every 8 tiles (two rows).
   let rendered = 0;
-  let prevLvlId: string | null = null;
   const nodes: React.ReactNode[] = [];
 
   for (const tier of TIERS) {
@@ -316,7 +313,16 @@ function LevelList({
       </div>,
     );
 
-    let tierPos = 0;
+    const tiles: React.ReactNode[] = [];
+    const flushTiles = (key: string) => {
+      if (!tiles.length) return;
+      nodes.push(
+        <div key={key} className="grid grid-cols-4 gap-2 p-3 sm:grid-cols-5">
+          {tiles.splice(0, tiles.length)}
+        </div>,
+      );
+    };
+
     for (const { lvl, idx } of tierLevels) {
       const stars = progress[lvl.id] ?? 0;
       const cleared = stars > 0;
@@ -325,206 +331,67 @@ function LevelList({
       const isPendingNext = pendingNextId === lvl.id;
       const isArrivedNext = arrivedNextId === lvl.id;
       const showPlay = canPlay && !isPendingNext;
-      if (tierPos > 0) {
-        const spotlight = !!justClearedId && prevLvlId === justClearedId;
-        const celebrating = spotlight && !!pendingNextId && !arrivedNextId;
-        const arrived = spotlight && !!arrivedNextId;
-        nodes.push(
-          <PathConnector
-            key={`path-${lvl.id}`}
-            active={prevCleared}
-            direction={tierPos % 2 === 0 ? "right" : "left"}
-            spotlight={spotlight}
-            celebrating={celebrating}
-            arrived={arrived}
-            onFinished={spotlight ? onCelebrationDone : undefined}
-          />,
-        );
-      }
-      tierPos++;
-      prevLvlId = lvl.id;
-      const body = (
-        <div className="flex items-center gap-3 p-3">
-          <div className={`relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted ${isPendingNext ? "animate-marker-pulse" : ""}`}>
-            {canPlay ? (
-              <img src={lvl.image_a_url} alt="" className="h-full w-full object-cover" loading="lazy" />
-            ) : (
-              <Lock className="h-5 w-5 text-muted-foreground" />
-            )}
-            {cleared && (
-              <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-success text-success-foreground shadow">
-                <Check className="h-3.5 w-3.5" strokeWidth={3} />
-              </span>
-            )}
+
+      const tile = (
+        <div
+          className={`relative aspect-square overflow-hidden rounded-2xl ring-2 ${cleared ? ring : "ring-border"} bg-muted ${isPendingNext ? "animate-marker-pulse" : ""} ${showPlay ? "transition hover:brightness-110" : "opacity-70"}`}
+        >
+          {canPlay ? (
+            <img src={lvl.image_a_url} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+          ) : null}
+          <div className={`absolute inset-0 ${canPlay ? "bg-gradient-to-t from-black/70 via-black/20 to-transparent" : "grid place-items-center"}`}>
+            {!canPlay && !isPendingNext && <Lock className="h-4 w-4 text-muted-foreground" />}
           </div>
-          <div className="min-w-0 flex-1">
-            <div className={`text-[10px] font-bold uppercase tracking-widest ${canPlay ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
-              Level {lvl.level_number}
+          {isPendingNext && (
+            <span className="absolute inset-0 grid place-items-center text-2xl">{isArrivedNext ? "🦆" : "🦆"}</span>
+          )}
+          {canPlay && (
+            <div className="absolute inset-x-0 bottom-0 p-1 text-center">
+              <div className="text-sm font-black leading-none text-white drop-shadow">{lvl.level_number}</div>
+              <div className="mt-0.5 flex items-center justify-center gap-0.5">
+                {[0, 1, 2].map((i) => (
+                  <Star key={i} className={`h-2.5 w-2.5 ${i < stars ? "fill-warning text-warning" : "text-white/40"}`} />
+                ))}
+              </div>
             </div>
-            <div className={`truncate text-base font-black ${canPlay ? "" : "text-muted-foreground"}`}>{lvl.title}</div>
-            <div className="mt-1 flex items-center gap-0.5">
-              {[0, 1, 2].map((i) => (
-                <Star key={i} className={`h-4 w-4 ${i < stars ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
-              ))}
-            </div>
-          </div>
-          {showPlay ? (
-            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${chip} animate-fade-in`}>
-              {cleared ? "Replay" : "Play"}
-            </span>
-          ) : isArrivedNext ? (
-            <span className="shrink-0 rounded-full bg-success/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-success animate-fade-in">
-              Duck arrived!
-            </span>
-          ) : isPendingNext ? (
-            <span className="shrink-0 rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-primary">
-              Duck on the way…
-            </span>
-          ) : (
-            <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
-              Locked
+          )}
+          {cleared && (
+            <span className="absolute right-1 top-1 grid h-4 w-4 place-items-center rounded-full bg-success text-success-foreground shadow">
+              <Check className="h-2.5 w-2.5" strokeWidth={3} />
             </span>
           )}
         </div>
       );
-      nodes.push(
-        <div key={lvl.id} id={`lvl-${lvl.id}`} className="border-t border-border first:border-t-0">
+
+      tiles.push(
+        <div key={lvl.id} id={`lvl-${lvl.id}`} title={lvl.title}>
           {showPlay ? (
-            <Link to="/play/$mode/$levelId" params={{ mode: "story", levelId: lvl.id }} className="block transition hover:bg-muted/50">
-              {body}
+            <Link to="/play/$mode/$levelId" params={{ mode: "story", levelId: lvl.id }} className="block">
+              {tile}
             </Link>
           ) : (
-            <div aria-disabled className="opacity-70">{body}</div>
+            <div aria-disabled>{tile}</div>
           )}
+          <div className={`mt-1 truncate text-center text-[10px] font-semibold ${canPlay ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
+            {lvl.title}
+          </div>
         </div>,
       );
+
       rendered++;
-      if (rendered % 2 === 0) {
+      if (rendered % 8 === 0) {
+        flushTiles(`grid-${lvl.id}`);
         nodes.push(<AdSlot key={`ad-${lvl.id}`} />);
       }
     }
+    flushTiles(`grid-tail-${tier.key}`);
   }
+
+  // `chip` is retained for theme parity with the world header.
+  void chip;
 
   return <div className="relative">{nodes}</div>;
 }
 
-// Footprint trail between two consecutive levels. When `active` (previous
-// level cleared), footprints appear one-by-one along a curved path. When
-// `spotlight` is true (the user just cleared the level above), a duck holding
-// a magnifying glass walks along the same curve for ~3s.
-function PathConnector({
-  active,
-  direction,
-  spotlight = false,
-  celebrating = false,
-  arrived = false,
-  onFinished,
-}: {
-  active: boolean;
-  direction: "left" | "right";
-  spotlight?: boolean;
-  celebrating?: boolean;
-  arrived?: boolean;
-  onFinished?: () => void;
-}) {
-  // Vertical path — duck walks from the previous (top) level DOWN to the
-  // next (bottom) level, matching the top-to-bottom list layout. The
-  // control point offsets sideways so the trail gently curves left/right
-  // between rows instead of being a straight line.
-  const p0 = { x: 48, y: 8 };
-  const p2 = { x: 48, y: 152 };
-  const p1 = { x: direction === "right" ? 82 : 14, y: 80 };
-
-  const STEPS = 9;
-  const points = Array.from({ length: STEPS }, (_, i) => {
-    const t = (i + 0.5) / STEPS;
-    const mt = 1 - t;
-    const x = mt * mt * p0.x + 2 * mt * t * p1.x + t * t * p2.x;
-    const y = mt * mt * p0.y + 2 * mt * t * p1.y + t * t * p2.y;
-    const dx = 2 * mt * (p1.x - p0.x) + 2 * t * (p2.x - p1.x);
-    const dy = 2 * mt * (p1.y - p0.y) + 2 * t * (p2.y - p1.y);
-    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-    return { x, y, angle, side: i % 2 === 0 ? -1 : 1 };
-  });
-
-  return (
-    <div aria-hidden className={`relative mx-auto w-24 overflow-hidden ${spotlight ? "h-48" : "h-32"}`}>
-      <div className={`absolute inset-0 ${active || spotlight ? "bg-gradient-to-b from-sky-100/60 via-sky-50/20 to-transparent dark:from-sky-500/10" : ""}`} />
-
-      {/* Ambient life during spotlight — butterflies, pollen motes. */}
-      {spotlight && (
-        <>
-          <span className="pointer-events-none absolute left-[6%] top-[24%] text-lg animate-butterfly" style={{ animationDelay: "0.3s" }}>🦋</span>
-          <span className="pointer-events-none absolute right-[8%] top-[62%] text-base animate-butterfly" style={{ animationDelay: "1.4s", animationDuration: "7s" }}>🦋</span>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <span
-              key={i}
-              className="pointer-events-none absolute h-1.5 w-1.5 rounded-full bg-warning/70"
-              style={{
-                left: `${18 + i * 12}%`,
-                bottom: "10%",
-                animation: `pollen-float ${3 + i * 0.4}s ease-out ${i * 0.3}s infinite`,
-              }}
-            />
-          ))}
-        </>
-      )}
-
-      <svg viewBox="0 0 96 160" preserveAspectRatio="xMidYMid meet" className="absolute inset-0 h-full w-full">
-        {points.map((pt, i) => {
-          const rad = (pt.angle * Math.PI) / 180;
-          const nx = -Math.sin(rad) * 5 * pt.side;
-          const ny =  Math.cos(rad) * 5 * pt.side;
-          const rot = pt.angle + (pt.side > 0 ? 12 : -12);
-          const showPrint = active || spotlight;
-          return (
-            <g
-              key={i}
-              transform={`translate(${pt.x + nx} ${pt.y + ny}) rotate(${rot})`}
-              className={showPrint ? "animate-footprint" : ""}
-              style={showPrint ? { animationDelay: `${i * 220}ms`, opacity: 0 } : undefined}
-            >
-              {showPrint ? (
-                <>
-                  <ellipse rx="2.6" ry="3.4" cy="1.2" className="fill-primary" />
-                  <circle r="1" cx="-1.8" cy="-2.8" className="fill-primary" />
-                  <circle r="0.8" cx="-0.5" cy="-3.7" className="fill-primary" />
-                  <circle r="0.8" cx="0.8" cy="-3.7" className="fill-primary" />
-                  <circle r="0.8" cx="2"    cy="-2.9" className="fill-primary" />
-                </>
-              ) : (
-                <circle r="1.3" className="fill-muted-foreground/30" />
-              )}
-            </g>
-          );
-        })}
-
-        {spotlight && <DuckWalk p0={p0} p1={p1} p2={p2} />}
-      </svg>
-
-      {celebrating && (
-        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-primary-foreground shadow animate-fade-in">
-          Duck arriving…
-        </span>
-      )}
-      {arrived && (
-        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-success px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-success-foreground shadow animate-fade-in">
-          Duck arrived!
-        </span>
-      )}
-      {spotlight && <DuckDoneSignal onFinished={onFinished} />}
-    </div>
-  );
-}
-
-function DuckDoneSignal({ onFinished }: { onFinished?: () => void }) {
-  useEffect(() => {
-    if (!onFinished) return;
-    // DuckWalk default = 3800ms walk + ~1050ms celebration ≈ 4900ms.
-    const t = window.setTimeout(() => onFinished(), 4900);
-    return () => window.clearTimeout(t);
-  }, [onFinished]);
-  return null;
-}
 
 
