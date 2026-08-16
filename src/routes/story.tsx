@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Lock, Star, Sparkles, Home as HomeIcon, Trophy, Check } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { AppFooter } from "@/components/AppFooter";
-import { AdSlot } from "@/components/AdSlot";
+
 import { getStoryMap, getMyStoryProgress } from "@/lib/levels.functions";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -258,7 +258,7 @@ function StoryMap() {
 
 // ---------------------------------------------------------------------------
 // LevelList: groups a world's levels by difficulty tier (Easy / Intermediate
-// / Hard) and injects an AdSlot after every 2 rendered level cards.
+// / Hard) and renders them in a compact grid.
 // ---------------------------------------------------------------------------
 
 const TIERS: { key: string; label: string; min: number; max: number; badge: string }[] = [
@@ -291,8 +291,7 @@ function LevelList({
   const clearedByIndex = worldLevels.map((lvl) => (progress[lvl.id] ?? 0) >= 1);
 
   // Compact grid layout: 4 tiles per row so a whole world fits on one or two
-  // screens, with an ad after every 8 tiles (two rows).
-  let rendered = 0;
+  // screens.
   const nodes: React.ReactNode[] = [];
 
   for (const tier of TIERS) {
@@ -374,16 +373,10 @@ function LevelList({
           <div className={`mt-1 truncate text-center text-[10px] font-semibold ${canPlay ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
             {lvl.title}
           </div>
-        </div>,
-      );
-
-      rendered++;
-      if (rendered % 8 === 0) {
-        flushTiles(`grid-${lvl.id}`);
-        nodes.push(<AdSlot key={`ad-${lvl.id}`} />);
-      }
-    }
-    flushTiles(`grid-tail-${tier.key}`);
+      </div>,
+    );
+  }
+  flushTiles(`grid-tail-${tier.key}`);
   }
 
   // `chip` is retained for theme parity with the world header.
