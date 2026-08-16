@@ -291,8 +291,7 @@ function LevelList({
   const clearedByIndex = worldLevels.map((lvl) => (progress[lvl.id] ?? 0) >= 1);
 
   // Compact grid layout: 4 tiles per row so a whole world fits on one or two
-  // screens, with an ad after every 8 tiles (two rows).
-  let rendered = 0;
+  // screens.
   const nodes: React.ReactNode[] = [];
 
   for (const tier of TIERS) {
