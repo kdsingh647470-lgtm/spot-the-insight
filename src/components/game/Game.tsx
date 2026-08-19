@@ -824,7 +824,16 @@ function GameImage({
       style={{ aspectRatio: "4/3" }}
     >
       <div className="absolute inset-0" style={style}>
-        <img src={src} alt="Spot the difference puzzle scene" className="pointer-events-none absolute inset-0 h-full w-full object-cover" draggable={false} />
+        <img
+          src={src}
+          alt="Spot the difference puzzle scene"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+          loading="eager"
+          decoding="async"
+          // @ts-expect-error - fetchpriority is a valid HTML attribute
+          fetchpriority="high"
+        />
         {found.map((f) => (
           <span key={f.id} className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-success bg-success/20" style={{ left: `${f.x * 100}%`, top: `${f.y * 100}%`, width: "12%", aspectRatio: "1" }} />
         ))}
