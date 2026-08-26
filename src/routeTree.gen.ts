@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StoryRouteImport } from './routes/story'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -37,6 +38,11 @@ const StoryRoute = StoryRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeaderboardRoute = LeaderboardRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/leaderboard'
+    | '/privacy'
     | '/sitemap.xml'
     | '/story'
     | '/terms'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/leaderboard'
+    | '/privacy'
     | '/sitemap.xml'
     | '/story'
     | '/terms'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/leaderboard'
+    | '/privacy'
     | '/sitemap.xml'
     | '/story'
     | '/terms'
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   LeaderboardRoute: typeof LeaderboardRoute
+  PrivacyRoute: typeof PrivacyRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StoryRoute: typeof StoryRoute
   TermsRoute: typeof TermsRoute
@@ -226,6 +239,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leaderboard': {
@@ -329,6 +349,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   LeaderboardRoute: LeaderboardRoute,
+  PrivacyRoute: PrivacyRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StoryRoute: StoryRoute,
   TermsRoute: TermsRoute,
