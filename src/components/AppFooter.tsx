@@ -29,14 +29,12 @@ export function AppFooter() {
             aria-label="Footer"
             className="flex flex-wrap items-center justify-center gap-4 text-sm font-medium text-muted-foreground"
           >
-            <a
-              href="https://nesake.com/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/privacy"
               className="inline-flex items-center gap-1.5 transition hover:text-foreground"
             >
               <Shield className="h-4 w-4" /> Privacy Policy
-            </a>
+            </Link>
             <Link
               to="/terms"
               className="inline-flex items-center gap-1.5 transition hover:text-foreground"
